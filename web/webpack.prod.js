@@ -11,8 +11,7 @@ const elkjsRoot = path.dirname(require.resolve('elkjs/package.json'));
 
 const webpackProd = {
   mode: 'production',
-  devtool: 'eval-cheap-module-source-map',
-  stats: 'errors-warnings',
+  devtool: 'source-map',
   plugins: [
     new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
