@@ -43,8 +43,8 @@ usage() {
   echo "  -a, --api-port int          API port (default: 5000)"
   echo "  -m, --api-admin-port int    API admin port (default: 5001)"
   echo "  -w, --web-port int          web port (default: 3000)"
-  echo "  -p, --db-port int           database port (default: 5432)"
-  echo "  -e, --search-port int       search port (default: 9200)"
+  echo "  -d, --db-port int           database port (default: 5432)"
+  echo "  -e --search-port int        search port (default: 9200)"
   echo "  -t, --tag string            docker image tag (default: ${VERSION})"
   echo "  --args string               docker arguments"
   echo
@@ -71,6 +71,7 @@ API_PORT=5000
 API_ADMIN_PORT=5001
 WEB_PORT=3000
 DB_PORT=5432
+DB_PORT=5432
 SEARCH_PORT=9200
 NO_WEB="false"
 NO_SEARCH="false"
@@ -94,7 +95,9 @@ while [ $# -gt 0 ]; do
        WEB_PORT="${1}"
        ;;
     -d|'--db-port')
+    -d|'--db-port')
        shift
+       DB_PORT="${1}"
        DB_PORT="${1}"
        ;;
     -e|'--search-port')
@@ -171,5 +174,6 @@ if [[ "${NO_SEARCH}" = "true" ]]; then
 fi
 
 # Run docker compose cmd with overrides
+DOCKER_SCAN_SUGGEST="false" API_PORT=${API_PORT} API_ADMIN_PORT=${API_ADMIN_PORT} WEB_PORT=${WEB_PORT} POSTGRES_PORT=${DB_PORT} SEARCH_ENABLED=${SEARCH_ENABLED} SEARCH_PORT=${SEARCH_PORT} TAG=${TAG} \
 DOCKER_SCAN_SUGGEST="false" API_PORT=${API_PORT} API_ADMIN_PORT=${API_ADMIN_PORT} WEB_PORT=${WEB_PORT} POSTGRES_PORT=${DB_PORT} SEARCH_ENABLED=${SEARCH_ENABLED} SEARCH_PORT=${SEARCH_PORT} TAG=${TAG} \
   docker --log-level ERROR compose $compose_files up $compose_args
