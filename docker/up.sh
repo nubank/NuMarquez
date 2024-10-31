@@ -44,7 +44,7 @@ usage() {
   echo "  -m, --api-admin-port int    API admin port (default: 5001)"
   echo "  -w, --web-port int          web port (default: 3000)"
   echo "  -d, --db-port int           database port (default: 5432)"
-  echo "  -e --search-port int        search port (default: 9200)"
+  echo "  -e, --search-port int       search port (default: 9200)"
   echo "  -t, --tag string            docker image tag (default: ${VERSION})"
   echo "  --args string               docker arguments"
   echo
