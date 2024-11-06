@@ -15,12 +15,12 @@ services:
     tty: true
     depends_on:
       - api
-      
+
 # marquez-web-server
   proxy:
     build:
       dockerfile: ./Dockerfile
-    container_name: marquez-web-server
+    container_name: marquez-auth-server
     ports:
       - "1337:1337"
     environment:
