@@ -1,0 +1,76 @@
+services:
+# marquez-web
+  web:
+    build:
+      context: ../web
+      dockerfile: Dockerfile
+    container_name: marquez-web
+    environment:
+      - MARQUEZ_HOST=marquez-api
+      - MARQUEZ_PORT=5000
+      - WEB_PORT=3000
+    expose:
+      - "3000"
+    stdin_open: true
+    tty: true
+    depends_on:
+      - api
+    networks:
+      - app-network
+
+# marquez-web-server
+  marquez-web-server:
+    build:
+      dockerfile: ./Dockerfile
+    container_name: marquez-web-server
+    ports:
+      - "1337:1337"
+    environment:
+      - SESSION_SECRET=your_secret_key
+    depends_on:
+      - web
+    networks:
+      - app-network
+
+  # OAuth2 proxy
+  oauth2-proxy:
+    build:
+      context: ./oauth2-proxy
+      dockerfile: Dockerfile
+    container_name: oauth2-proxy
+    # volumes:
+    #   - ./docker/oauth2-proxy/oauth2_proxy.cfg:/etc/oauth2_proxy.cfg
+    ports:
+      - "4180:4180"
+    env_file:
+      - .env
+    depends_on:
+      - web
+      - marquez-web-server
+    networks:
+      - app-network
+
+  nginx-proxy:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs/certs:/etc/nginx/certs:ro
+      - ./nginx/logs:/var/log/nginx
+    # environment:
+    #   - BASIC_AUTH_USER=testuser
+    #   - BASIC_AUTH_PASSWORD=password
+    depends_on:
+      - oauth2-proxy
+      - web
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
