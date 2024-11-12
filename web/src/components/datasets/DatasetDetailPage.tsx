@@ -72,7 +72,6 @@ const DatasetDetailPage: FunctionComponent<IProps> = (props) => {
     datasets,
     dataset,
     isDatasetLoading,
-    isDatasetLoading,
     display,
     fetchDataset,
     resetDataset,
@@ -101,7 +100,6 @@ const DatasetDetailPage: FunctionComponent<IProps> = (props) => {
   // might need to map first version to its own state
   useEffect(() => {
     fetchDataset(lineageDataset.namespace, lineageDataset.name)
-  }, [lineageDataset.name])
   }, [lineageDataset.name])
 
   // if the dataset is deleted then redirect to datasets end point
@@ -180,7 +178,6 @@ const DatasetDetailPage: FunctionComponent<IProps> = (props) => {
             icon={<CalendarIcon color={'disabled'} />}
             label={'Updated at'.toUpperCase()}
             value={formatUpdatedAt(dataset.createdAt)}
-            value={formatUpdatedAt(dataset.createdAt)}
           />
         </Grid>
         <Grid item xs={6}>
@@ -188,14 +185,12 @@ const DatasetDetailPage: FunctionComponent<IProps> = (props) => {
             icon={<StorageIcon color={'disabled'} />}
             label={'Dataset Type'.toUpperCase()}
             value={<MqText font={'mono'}>{dataset.type}</MqText>}
-            value={<MqText font={'mono'}>{dataset.type}</MqText>}
           />
         </Grid>
         <Grid item xs={6}>
           <MqInfo
             icon={<ListIcon color={'disabled'} />}
             label={'Fields'.toUpperCase()}
-            value={`${dataset.fields.length} columns`}
             value={`${dataset.fields.length} columns`}
           />
         </Grid>
@@ -305,7 +300,6 @@ const DatasetDetailPage: FunctionComponent<IProps> = (props) => {
 const mapStateToProps = (state: IState) => ({
   datasets: state.datasets,
   dataset: state.dataset.result,
-  isDatasetLoading: state.dataset.isLoading,
   isDatasetLoading: state.dataset.isLoading,
   display: state.display,
   tabIndex: state.lineage.tabIndex,

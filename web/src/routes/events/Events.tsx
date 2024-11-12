@@ -67,7 +67,6 @@ type EventsProps = StateProps & DispatchProps
 
 const EVENTS_COLUMNS = ['ID', 'STATE', 'NAME', 'NAMESPACE', 'TIME']
 
-const PAGE_SIZE = 50
 const EVENTS_HEADER_HEIGHT = 64
 
 const Events: React.FC<EventsProps> = ({
@@ -336,7 +335,7 @@ const Events: React.FC<EventsProps> = ({
                         >
                           <TableCell align='left'>
                             <Box display={'flex'} alignItems={'center'}>
-                              <MqText font={'mono'}>{event.run.runId.substring(0, 8)}...</MqText>
+                              <MqText font={'mono'}>{event.run.runId}</MqText>
                               <MqCopy string={event.run.runId} />
                             </Box>
                           </TableCell>
