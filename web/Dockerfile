@@ -3,8 +3,7 @@ WORKDIR /usr/src/app
 
 ARG REACT_APP_ADVANCED_SEARCH
 
-RUN apk update && apk add --virtual bash coreutils
-RUN apk add --no-cache git
+RUN apk update && apk add --virtual bash coreutils && apk add --no-cache git && rm -rf /var/cache/apk/*
 
 COPY package*.json ./
 
