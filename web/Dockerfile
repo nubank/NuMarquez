@@ -20,6 +20,4 @@ COPY docker/entrypoint.sh entrypoint.sh
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
-
 ENTRYPOINT ["/usr/src/app/entrypoint.sh"]

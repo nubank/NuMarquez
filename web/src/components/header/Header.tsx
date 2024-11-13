@@ -10,6 +10,7 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Avatar from '@mui/material/Avatar';
 
+
 // Inside the Header component
 const Header = (): ReactElement => {
   const theme = createTheme(useTheme());
@@ -30,7 +31,7 @@ const Header = (): ReactElement => {
   };
 
   const handleLogin = () => {
-    window.location.href = `/oauth2/start?rd=${NGINX_PROXY_URL}`;
+    window.location.href = `/oauth2/start?rd=${(process.env.NGINX_PROXY_URL)}`;
   };
 
   return (
