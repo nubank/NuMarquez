@@ -3,7 +3,6 @@ FROM node:18
 
 RUN apt update && apt install -y authbind \
         && rm -rf /var/lib/apt/lists/* \
-        # && apk add curl \
         && rm -rf /var/cache/apk/*
 # Set the working directory
 WORKDIR /usr/src/app
