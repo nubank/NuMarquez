@@ -30,7 +30,7 @@ const Header = (): ReactElement => {
   };
 
   const handleLogin = () => {
-    window.location.href = '/oauth2/start?rd=https://localhost/';
+    window.location.href = `/oauth2/start?rd=${NGINX_PROXY_URL}`;
   };
 
   return (
