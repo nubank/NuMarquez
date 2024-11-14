@@ -43,7 +43,12 @@ app.get('/whoami', (req, res) => {
 });
 
 /** Health Check */
-app.get('/proxy/healthcheck/', (req, res) => {
+app.get('/proxy/healthcheck', (req, res) => {
+    return res.status(200).json({ message: 'Server is up and running!' });
+});
+
+/** Health Check cicd*/
+app.get('/healthcheck', (req, res) => {
     return res.status(200).json({ message: 'Server is up and running!' });
 });
 
