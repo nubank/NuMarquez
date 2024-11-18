@@ -19,4 +19,4 @@ ENV OAUTH2_PROXY_SKIP_AUTH_REGEX=^/favicon\.ico$
 EXPOSE 4180
 
 # Start OAuth2 Proxy with arguments
-CMD ["oauth2-proxy", "--ping-path=/ping", "--skip-auth-regex=^/ping$"]
+CMD ["oauth2-proxy", "--redirect-url=https://staging-marquez-web.nubank.world/oauth2/callback", "--upstream=http://marquez-web-ui:3000", "--ping-path=/ping", "--skip-auth-regex=^/ping$"]
