@@ -14,9 +14,8 @@ ENV OAUTH2_PROXY_PASS_USER_HEADERS=true
 ENV OAUTH2_PROXY_REVERSE_PROXY=true
 ENV OAUTH2_PROXY_COOKIE_NAME=SESSION
 ENV OAUTH2_PROXY_SKIP_AUTH_REGEX=^/favicon\.ico$
-
 # Expose the port
 EXPOSE 4180
 
-# Start OAuth2 Proxy
-CMD ["oauth2-proxy"]
+# Start OAuth2 Proxy with arguments
+CMD ["oauth2-proxy", "--ping-path=/ping", "--skip-auth-regex=^/ping$"]
