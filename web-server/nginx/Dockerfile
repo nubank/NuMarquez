@@ -7,11 +7,11 @@ RUN apk add --no-cache openssl
 # Set the working directory
 WORKDIR /usr/src/app
 
-# Copy the localhost.ext file into the container
-COPY localhost.ext /etc/nginx/certs/localhost.ext
+# Copy the domain.ext file into the container
+COPY domain.ext /etc/nginx/certs/domain.ext
 
 # Generate a private key
-RUN openssl genrsa -out localhost.key 2048
+RUN openssl genrsa -out domain.key 2048
 
 RUN openssl req -x509 -new -nodes -key domain.key -sha256 -days 3650 -out domain.crt \
     -subj "/C=US/ST=State/L=City/O=Organization/OU=OrgUnit/CN=staging-marquez-web.nubank.world"
