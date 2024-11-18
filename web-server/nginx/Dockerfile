@@ -13,22 +13,21 @@ COPY localhost.ext /etc/nginx/certs/localhost.ext
 # Generate a private key
 RUN openssl genrsa -out localhost.key 2048
 
-# Create a self-signed certificate
-RUN openssl req -x509 -new -nodes -key localhost.key -sha256 -days 3650 -out localhost.crt \
-    -subj "/C=US/ST=State/L=City/O=Organization/OU=OrgUnit/CN=localhost"
+RUN openssl req -x509 -new -nodes -key domain.key -sha256 -days 3650 -out domain.crt \
+    -subj "/C=US/ST=State/L=City/O=Organization/OU=OrgUnit/CN=staging-marquez-web.nubank.world"
 
-# Generate a Certificate Signing Request (CSR)
-RUN openssl req -new -key localhost.key -out localhost.csr \
-    -subj "/C=US/ST=State/L=City/O=Organization/OU=OrgUnit/CN=localhost"
+# Generate a CSR with the correct domain
+RUN openssl req -new -key domain.key -out domain.csr \
+    -subj "/C=US/ST=State/L=City/O=Organization/OU=OrgUnit/CN=staging-marquez-web.nubank.world"
 
-# Generate the .pem certificate using the CSR and the extension file
-RUN openssl x509 -req -in localhost.csr -CA localhost.crt -CAkey localhost.key -CAcreateserial \
-    -out localhost.pem -days 365 -sha256 -extfile /etc/nginx/certs/localhost.ext
+# Generate the .pem certificate using the CSR and the updated extension file
+RUN openssl x509 -req -in domain.csr -CA domain.crt -CAkey domain.key -CAcreateserial \
+    -out domain.pem -days 365 -sha256 -extfile /etc/nginx/certs/domain.ext
 
 # Copy the generated certificates to /etc/nginx/certs/
-RUN cp localhost.key /etc/nginx/certs/localhost.key && \
-    cp localhost.crt /etc/nginx/certs/localhost.crt && \
-    cp localhost.pem /etc/nginx/certs/localhost.pem
+RUN cp domain.key /etc/nginx/certs/domain.key && \
+    cp domain.crt /etc/nginx/certs/domain.crt && \
+    cp domain.pem /etc/nginx/certs/domain.pem
 
 # Remove the default NGINX configuration
 RUN rm /etc/nginx/conf.d/default.conf
