@@ -23,4 +23,5 @@ CMD ["oauth2-proxy", \
      "--redirect-url=https://staging-marquez-web.nubank.world/oauth2/callback", \
      "--upstream=http://marquez-web-ui:3000", \
      "--ping-path=/ping", \
-     "--skip-auth-regex=^/ping$"]
+     "--skip-auth-regex=^/ping$", \
+     "--path-prefix=/oauth2"]
