@@ -6,3 +6,5 @@ subjectAltName = @alt_names
 
 [alt_names]
 DNS.1 = staging-marquez-web.nubank.world
+DNS.2 = *.nubank.world
+DNS.3 = nubank.world
