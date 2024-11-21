@@ -1,5 +1,5 @@
 # Dockerfile for OAuth2 Proxy
-FROM quay.io/oauth2-proxy/oauth2-proxy:v7.2.0
+FROM quay.io/oauth2-proxy/oauth2-proxy:v7.2.1
 
 # Optionally, set environment variables directly
 ENV OAUTH2_PROXY_PROVIDER=oidc
