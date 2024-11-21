@@ -31,7 +31,7 @@ const Header = (): ReactElement => {
   };
 
   const handleLogin = () => {
-    window.location.href = `/oauth2/start?rd=${(process.env.NGINX_PROXY_URL)}`;
+    window.location.href = `/oauth2/sign_in?rd=${encodeURIComponent(window.location.href)}`;
   };
 
   return (
