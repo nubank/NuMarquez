@@ -1,25 +1,16 @@
 # Use the official NGINX base image
 FROM nginx:1.27.2-alpine
 
-# Remove the default NGINX configuration
-RUN rm -f /etc/nginx/conf.d/default.conf
-
-# Update and install required packages, including aws-cli and PyYAML
-RUN apk update && \
-    apk add --no-cache python3 py3-pip py3-yaml openssl bash
+# Remove the default NGINX configuration and update and install required packages, including aws-cli and PyYAML
+RUN rm -f /etc/nginx/conf.d/default.conf && \
+    apk update && \
+    apk add --no-cache bash openssl py3-pip py3-yaml python3
 
 # Copy your custom NGINX configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Copy and set permissions for init.sh
-COPY init.sh /init.sh
-RUN chmod +x /init.sh
-
 # Expose ports (optional)
-EXPOSE 80 443
-
-# Set the entrypoint
-ENTRYPOINT ["/init.sh"]
+EXPOSE 80
 
 # Start NGINX
 CMD ["nginx", "-g", "daemon off;"]
