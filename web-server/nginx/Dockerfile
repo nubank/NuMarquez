@@ -6,7 +6,7 @@ RUN rm -f /etc/nginx/conf.d/default.conf
 
 # Update and install required packages, including aws-cli and PyYAML
 RUN apk update && \
-    apk add --no-cache python3 py3-pip py3-yaml aws-cli openssl bash
+    apk add --no-cache python3 py3-pip py3-yaml openssl bash
 
 # Copy your custom NGINX configuration
 COPY nginx.conf /etc/nginx/nginx.conf
