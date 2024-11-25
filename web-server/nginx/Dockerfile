@@ -10,7 +10,7 @@ RUN rm -f /etc/nginx/conf.d/default.conf && \
 COPY nginx.conf /etc/nginx/nginx.conf
 
 # Expose ports (optional)
-EXPOSE 80
+EXPOSE 80 443
 
 # Start NGINX
 CMD ["nginx", "-g", "daemon off;"]
