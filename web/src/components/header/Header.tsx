@@ -31,7 +31,7 @@ const Header = (): ReactElement => {
   };
 
   const handleLogin = () => {
-    window.location.href = `/oauth2/start?rd=${encodeURIComponent(window.location.href)}`;
+    window.location.href = `/oauth2/start`;
   };
 
   return (
