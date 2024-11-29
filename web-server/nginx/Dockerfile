@@ -1,11 +1,8 @@
-FROM 193814090748.dkr.ecr.us-east-1.amazonaws.com/mirror/nginx
+# Use the official NGINX base image
+FROM nginx:1.27.2-alpine
 
-RUN apt-get update && \
-    apt-get install -y python3-pip && \
-    apt-get install -y python3-yaml && \
-    apt-get install -y curl && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Install OpenSSL and required packages, including aws-cli and PyYAML
+RUN apk add --no-cache openssl py3-pip python3
 
 # Copy your custom NGINX configuration
 COPY nginx.conf /etc/nginx/nginx.conf
