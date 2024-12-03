@@ -3,9 +3,7 @@ FROM quay.io/vouch/vouch-proxy:alpine-latest
 USER root
 
 RUN apk update && apk upgrade && \
-    apk --no-cache add python3 py3-pip
-
-RUN pip3 install --no-cache-dir awscli
+    apk --no-cache add python3 py3-pip aws-cli
 
 COPY --chown=1000 init.sh /init.sh
 

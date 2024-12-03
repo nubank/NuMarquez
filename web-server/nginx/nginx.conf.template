@@ -1,7 +1,7 @@
-worker_processes 8;
+worker_processes 1;
 
 events {
-  worker_connections 4096;
+  worker_connections 1024;
 }
 
 http {
@@ -99,8 +99,8 @@ http {
       auth_request /vouch/validate;
 
       # Set variable for upstream to allow dynamic resolution on request-time not startup-time
-      set $bela_api "prod-global-bela.ist.nubank.world";
-      proxy_pass https://$bela_api;
+      set $marquez_api "staging-marquez-web.nubank.world";
+      proxy_pass https://$marquez_api;
 
       proxy_set_header Host $http_host;
       auth_request_set $auth_user $upstream_http_x_vouch_user;

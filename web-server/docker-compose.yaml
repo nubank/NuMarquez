@@ -19,29 +19,30 @@ services:
       - app-network
 
 # marquez-web-server
-  marquez-web-server:
+  marquez-caddy-s3:
     build:
-      dockerfile: ./Dockerfile
-    container_name: marquez-web-server
+      dockerfile: ./caddy-s3/Dockerfile
+    container_name: marquez-caddy-s3
     ports:
-      - "1337:1337"
+      - "9091:9091"
     environment:
-      - SESSION_SECRET=your_secret_key
+      - CADDY_S3_BUCKET=
+      - CADDY_S3_REGION=westus2
     depends_on:
       - web
     networks:
       - app-network
 
-  # OAuth2 proxy
-  oauth2-proxy:
+  # Vouch proxy
+  vouch-proxy:
     build:
-      context: ./oauth2-proxy
+      context: ./vouch-proxy/oauth2-proxy
       dockerfile: Dockerfile
-    container_name: oauth2-proxy
+    container_name: vouch-proxy
     # volumes:
     #   - ./docker/oauth2-proxy/oauth2_proxy.cfg:/etc/oauth2_proxy.cfg
     ports:
-      - "4180:4180"
+      - "9090:9090"
     env_file:
       - .env
     depends_on:
@@ -52,7 +53,7 @@ services:
 
   nginx-proxy:
     build:
-      context: ./nginx
+      context: ./nginx/nginx
       dockerfile: Dockerfile
     container_name: nginx-proxy
     ports:
@@ -66,7 +67,7 @@ services:
     #   - BASIC_AUTH_USER=testuser
     #   - BASIC_AUTH_PASSWORD=password
     depends_on:
-      - oauth2-proxy
+      - vouch-proxy
       - web
     networks:
       - app-network
