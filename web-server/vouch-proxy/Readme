@@ -1,0 +1,6 @@
+# Readme
+
+This image allows deploying a [vouch](https://github.com/vouch/vouch-proxy) instance.
+The OAUTH_CLIENT_ID and OAUTH_CLIENT_SECRET variables are set by fetching `nu-secrets`.
+To determine where to fetch the secrets set `OAUTH_CLIENT_ID_S3_LOCATION` and `OAUTH_CLIENT_SECRET_S3_LOCATION` with the appropriate s3 path (e.g. `s3://nu-secrets-br-prod/bela/oauth_client_id`).
+Any other setup must be done via environment variables, to find list of variables [see](https://github.com/vouch/vouch-proxy#configuring-via-environmental-variables).

@@ -1,0 +1,4 @@
+# Readme
+
+This image allows serving files from a S3 bucket using [caddy](https://caddyserver.com/).
+To define the bucket and its region set the `CADDY_S3_BUCKET` and `CADDY_S3_REGION` environment variables.

@@ -1,14 +1,17 @@
-# Use the official NGINX base image
-FROM nginx:1.27.3
+FROM 193814090748.dkr.ecr.us-east-1.amazonaws.com/mirror/nginx
 
-# Install OpenSSL and required packages, including aws-cli and PyYAML
-RUN apt-get update && apt-get install -y openssl python3 python3-pip && apt-get clean
+RUN apt-get update && apt-get install -y python3-pip
 
-# Copy your custom NGINX configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+# awscli latest version has a bug that prevents it from working with IAM roles
+# until fixed, use a specific version
+RUN pip3 install --no-cache-dir awscli==1.29.3
 
-# Expose ports (optional)
-EXPOSE 80 443
+COPY nginx.conf.template /templates/nginx.conf.template
 
-# Start NGINX
+COPY init.sh /init.sh
+
+RUN chmod +x /init.sh
+
+ENTRYPOINT ["/init.sh"]
+
 CMD ["nginx", "-g", "daemon off;"]

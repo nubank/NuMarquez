@@ -1,0 +1,10 @@
+{
+  order s3proxy last
+}
+
+:9091 {
+  s3proxy /* {
+    bucket {$CADDY_S3_BUCKET}
+    region {$CADDY_S3_REGION}
+  }
+}

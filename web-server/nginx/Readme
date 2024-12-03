@@ -1,0 +1,8 @@
+# Readme
+
+This image allows deploying a ```nginx``` to serve bela repository.
+It authenticates requests via [`vouch`](../vouch/README.md) that must be run on port 9090.
+The resources are served by [`caddy`](../caddy/README.md) that must be run on port 9091.
+The three components must be deployed as a pod in kubernetes communicating via localhost with each other.
+The purpose of this solution is to allow serving BELA without requiring VPN.
+Okta (via vouch) is used to authenticate requests.
