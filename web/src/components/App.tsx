@@ -1,47 +1,49 @@
-import React, { ReactElement } from 'react';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { Box, Container, CssBaseline } from '@mui/material';
-import { Helmet, HelmetProvider } from 'react-helmet-async';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { NotFound } from '../routes/not-found/NotFound';
-import { Provider } from 'react-redux';
-import { ReduxRouter, createRouterMiddleware } from '@lagunovsky/redux-react-router';
-import { Route, Routes } from 'react-router-dom';
-import { StyledEngineProvider, ThemeProvider } from '@mui/material/styles';
-import { applyMiddleware, createStore } from 'redux';
-import { composeWithDevTools } from '@redux-devtools/extension';
-import { createBrowserHistory } from 'history';
-import { theme } from '../helpers/theme';
-import ColumnLevel from '../routes/column-level/ColumnLevel';
-import Dashboard from '../routes/dashboard/Dashboard';
-import Datasets from '../routes/datasets/Datasets';
-import Events from '../routes/events/Events';
-import Header from './header/Header';
-import Jobs from '../routes/jobs/Jobs';
-import Sidenav from './sidenav/Sidenav';
-import TableLevel from '../routes/table-level/TableLevel';
-import Toast from './Toast';
-import createRootReducer from '../store/reducers';
-import createSagaMiddleware from 'redux-saga';
-import rootSaga from '../store/sagas';
-import ErrorBoundary from './ErrorBoundary'; 
-import { UserProvider } from '../context/UserContext';
+// Copyright 2018-2023 contributors to the Marquez project
+// SPDX-License-Identifier: Apache-2.0
+
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import { Box, Container, CssBaseline } from '@mui/material'
+import { Helmet, HelmetProvider } from 'react-helmet-async'
+import { LocalizationProvider } from '@mui/x-date-pickers'
+import { NotFound } from '../routes/not-found/NotFound'
+import { Provider } from 'react-redux'
+import { ReduxRouter, createRouterMiddleware } from '@lagunovsky/redux-react-router'
+import { Route, Routes } from 'react-router-dom'
+import { StyledEngineProvider, ThemeProvider } from '@mui/material/styles'
+import { applyMiddleware, createStore } from 'redux'
+import { composeWithDevTools } from '@redux-devtools/extension'
+import { createBrowserHistory } from 'history'
+import { theme } from '../helpers/theme'
+import ColumnLevel from '../routes/column-level/ColumnLevel'
+import Dashboard from '../routes/dashboard/Dashboard'
+import Datasets from '../routes/datasets/Datasets'
+import Events from '../routes/events/Events'
+import Header from './header/Header'
+import Jobs from '../routes/jobs/Jobs'
+import React, { ReactElement } from 'react'
+import Sidenav from './sidenav/Sidenav'
+import TableLevel from '../routes/table-level/TableLevel'
+import Toast from './Toast'
+import createRootReducer from '../store/reducers'
+import createSagaMiddleware from 'redux-saga'
+import rootSaga from '../store/sagas'
 
 const sagaMiddleware = createSagaMiddleware({
   onError: (error, _sagaStackIgnored) => {
-    console.log('There was an error in the saga', error);
+    console.log('There was an error in the saga', error)
   },
-});
-const history = createBrowserHistory();
-const historyMiddleware = createRouterMiddleware(history);
+})
+const history = createBrowserHistory()
+const historyMiddleware = createRouterMiddleware(history)
 
 const store = createStore(
   createRootReducer(history),
   composeWithDevTools(applyMiddleware(sagaMiddleware, historyMiddleware))
 )
-sagaMiddleware.run(rootSaga);
 
-const TITLE = 'Marquez';
+sagaMiddleware.run(rootSaga)
+
+const TITLE = 'Marquez'
 
 const App = (): ReactElement => {
   return (
@@ -55,39 +57,32 @@ const App = (): ReactElement => {
                   <title>{TITLE}</title>
                 </Helmet>
                 <CssBaseline />
-                <UserProvider>
-                  <Box ml={'80px'}>
-                    <Sidenav />
-                    <Container maxWidth={'lg'} disableGutters={true}>
-                      <Header />
-                    </Container>
-                    <Routes>
-                      <Route path={'/'} element={<Dashboard />} />
-                      <Route path={'/jobs'} element={<Jobs />} />
-                      <Route path={'/datasets'} element={<Datasets />} />
-                      <Route path={'/events'} element={<Events />} />
-                      <Route
-                        path={'/datasets/column-level/:namespace/:name'}
-                        element={<ColumnLevel />}
-                      />
-                      <Route path={'/lineage/:nodeType/:namespace/:name'} element={<TableLevel />} />
-                      <Route path='*' element={<NotFound />} />
-                    </Routes>
-                    <Toast />
-                  </Box>
-                </UserProvider>
+                <Box ml={'80px'}>
+                  <Sidenav />
+                  <Container maxWidth={'xl'} disableGutters={true}>
+                    <Header />
+                  </Container>
+                  <Routes>
+                    <Route path={'/'} element={<Dashboard />} />
+                    <Route path={'/jobs'} element={<Jobs />} />
+                    <Route path={'/datasets'} element={<Datasets />} />
+                    <Route path={'/events'} element={<Events />} />
+                    <Route
+                      path={'/datasets/column-level/:namespace/:name'}
+                      element={<ColumnLevel />}
+                    />
+                    <Route path={'/lineage/:nodeType/:namespace/:name'} element={<TableLevel />} />
+                    <Route path='*' element={<NotFound />} />
+                  </Routes>
+                  <Toast />
+                </Box>
               </LocalizationProvider>
             </ThemeProvider>
           </StyledEngineProvider>
         </ReduxRouter>
       </HelmetProvider>
     </Provider>
-  );
-};
+  )
+}
 
-export default () => (
-  <ErrorBoundary>
-    <App />
-  </ErrorBoundary>
-);
-
+export default App
