@@ -4,7 +4,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 export const oktaAuth = new OktaAuth({
   issuer: 'https://nubank.okta.com/oauth2/default',
   clientId: '0oa20d6n6jb6nG5Mn0h8',
-  redirectUri: 'https://staging-marquez-web-ui.nubank.world/login/callback',
+  // redirectUri: 'https://staging-marquez-web-ui.nubank.world/login/callback',
+  redirectUri: window.location.origin + '/login/callback',
   scopes: ['openid', 'profile', 'email'],
   pkce: true,
   tokenManager: {
