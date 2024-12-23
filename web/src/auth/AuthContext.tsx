@@ -1,5 +1,5 @@
 import { OktaAuth } from '@okta/okta-auth-js'
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 
 export const oktaAuth = new OktaAuth({
   issuer: 'https://nubank.okta.com/oauth2/default',
@@ -42,6 +42,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       setLoading(false)
     }
+
     checkAuthentication()
   }, [])
 
@@ -55,7 +56,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null)
   }
 
-  const value = useMemo(
+  const value = React.useMemo(
     () => ({
       isAuthenticated,
       user,
