@@ -2,6 +2,7 @@ const { merge } = require('webpack-merge')
 const webpack = require('webpack')
 const webpackShared = require('./webpack.common.js')
 const CopyPlugin = require('copy-webpack-plugin')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
 const path = require('path')
 
 // look for elkjs package folder
@@ -17,7 +18,7 @@ const webpackDev = {
       serveIndex: true,
       watch: true,
     },
-    port: 1337,
+    port: 3000,
     devMiddleware: {
       publicPath: '/'
     },

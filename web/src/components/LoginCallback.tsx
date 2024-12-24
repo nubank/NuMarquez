@@ -8,29 +8,16 @@ const LoginCallback = () => {
   const { oktaAuth } = useAuth()
 
   useEffect(() => {
-    let isMounted = true
-
     const handleCallback = async () => {
       try {
-        console.log('Handling redirect...')
         await oktaAuth.handleRedirect()
-        console.log('Redirect handled successfully')
-        if (isMounted) {
-          navigate('/', { replace: true })
-        }
+        navigate('/', { replace: true })
       } catch (error) {
         console.error('Error handling redirect:', error)
-        if (isMounted) {
-          navigate('/login')
-        }
+        navigate('/login')
       }
     }
-
     handleCallback()
-
-    return () => {
-      isMounted = false
-    }
   }, [oktaAuth, navigate])
 
   return (

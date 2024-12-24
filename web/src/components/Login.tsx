@@ -1,9 +1,15 @@
 import React from 'react'
 import { Box, Button, Container, Typography } from '@mui/material'
 import { useAuth } from '../auth/AuthContext'
+import { Navigate } from 'react-router-dom'
 
 const Login = () => {
-  const { login } = useAuth()
+  const { isAuthenticated, login } = useAuth()
+
+  // If already authenticated, redirect away from the login page
+  if (isAuthenticated) {
+    return <Navigate to='/' replace />
+  }
 
   return (
     <Container>
