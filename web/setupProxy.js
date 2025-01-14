@@ -4,6 +4,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware')
 const express = require('express')
 const router = express.Router()
 const path = require('path')
+const { access } = require('fs')
 
 const environmentVariable = (variableName) => {
   const value = process.env[variableName]
@@ -56,9 +57,12 @@ app.listen(port, () => {
 app.use(express.json());
 
 app.post('/api/loguserinfo', (req, res) => {
-  const { email, headers = {} } = req.body;
-  // Extract date/time from headers
-  const accessDateTime = headers.date || new Date().toISOString();
-  console.log(`[Access Log] User Email: ${email}`);
+  const { email = {} } = req.body;
+  const logData = {
+    accessLog: {
+      email
+    },
+  };
+  console.log(JSON.stringify(logData));
   res.sendStatus(200);
 });
