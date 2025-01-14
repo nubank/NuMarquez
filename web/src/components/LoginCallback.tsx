@@ -16,7 +16,11 @@ const LoginCallback = () => {
         if (isAuthenticated) {
           const userInfo = await oktaAuth.getUser()
           setUser(userInfo)
-          log.info('User Info:', userInfo)
+          await fetch('/api/loguserinfo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userInfo),
+          });
           navigate('/', { replace: true })
         } else {
           navigate('/login')
