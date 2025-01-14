@@ -15,6 +15,7 @@ const LoginCallback = () => {
         if (isAuthenticated) {
           const userInfo = await oktaAuth.getUser()
           setUser(userInfo)
+          console.log('User Info:', userInfo)
           navigate('/', { replace: true })
         } else {
           navigate('/login')
