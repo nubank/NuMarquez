@@ -2,6 +2,7 @@ import React, { useEffect } from 'react'
 import { Box, CircularProgress } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import log from 'loglevel';
 
 const LoginCallback = () => {
   const navigate = useNavigate()
@@ -15,7 +16,7 @@ const LoginCallback = () => {
         if (isAuthenticated) {
           const userInfo = await oktaAuth.getUser()
           setUser(userInfo)
-          console.log('User Info:', userInfo)
+          log.info('User Info:', userInfo)
           navigate('/', { replace: true })
         } else {
           navigate('/login')
