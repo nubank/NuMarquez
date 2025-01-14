@@ -56,9 +56,9 @@ app.listen(port, () => {
 app.use(express.json());
 
 app.post('/api/loguserinfo', (req, res) => {
-  const { email, locale, headers = {} } = req.body;
+  const { email, headers = {} } = req.body;
   // Extract date/time from headers
   const accessDateTime = headers.date || new Date().toISOString();
-  console.log(`[Access Log] Email: ${email}, Country: ${locale}, Time: ${accessDateTime}`);
+  console.log(`[Access Log] Email: ${email}, Time: ${accessDateTime}`);
   res.sendStatus(200);
 });
