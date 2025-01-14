@@ -59,6 +59,6 @@ app.post('/api/loguserinfo', (req, res) => {
   const { email, headers = {} } = req.body;
   // Extract date/time from headers
   const accessDateTime = headers.date || new Date().toISOString();
-  console.log(`[Access Log] Email: ${email}, Time: ${accessDateTime}`);
+  console.log(`[Access Log] User Email: ${email}`);
   res.sendStatus(200);
 });
