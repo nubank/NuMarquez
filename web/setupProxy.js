@@ -52,3 +52,10 @@ app.get('*', (req, res) => {
 app.listen(port, () => {
   console.log(`App listening on port ${port}!`)
 })
+
+app.use(express.json());
+
+app.post('/api/loguserinfo', (req, res) => {
+  console.log('User Info:', req.body);
+  res.sendStatus(200);
+});
