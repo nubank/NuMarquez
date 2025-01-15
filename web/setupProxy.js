@@ -23,6 +23,12 @@ const apiOptions = {
 }
 
 const app = express()
+promClient.collectDefaultMetrics();
+
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', promClient.register.contentType);
+  res.end(await promClient.register.metrics());
+});
 
 const distPath = path.join(__dirname, 'dist')
 
@@ -84,9 +90,3 @@ app.post('/api/loguserinfo', (req, res) => {
   res.sendStatus(200);
 });
 
-promClient.collectDefaultMetrics();
-
-app.get('/metrics', async (req, res) => {
-  res.set('Content-Type', promClient.register.contentType);
-  res.end(await promClient.register.metrics());
-});
