@@ -1,5 +1,6 @@
 
 const { createProxyMiddleware } = require('http-proxy-middleware')
+const promClient = require('prom-client')
 
 const express = require('express')
 const router = express.Router()
@@ -81,4 +82,11 @@ app.post('/api/loguserinfo', (req, res) => {
   };
   console.log(JSON.stringify(logData));
   res.sendStatus(200);
+});
+
+promClient.collectDefaultMetrics();
+
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', promClient.register.contentType);
+  res.end(await promClient.register.metrics());
 });

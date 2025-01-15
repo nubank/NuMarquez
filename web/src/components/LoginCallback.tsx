@@ -2,7 +2,6 @@ import React, { useEffect } from 'react'
 import { Box, CircularProgress } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import log from 'loglevel';
 
 const LoginCallback = () => {
   const navigate = useNavigate()
