@@ -22,6 +22,16 @@ const apiOptions = {
   changeOrigin: true,
 }
 
+const uptimeGauge = new promClient.Gauge({
+  name: 'app_uptime_seconds',
+  help: 'Application uptime in seconds',
+})
+
+// Update uptime metric every second
+setInterval(() => {
+  uptimeGauge.set(process.uptime())
+}, 1000)
+
 const app = express()
 promClient.collectDefaultMetrics();
 
