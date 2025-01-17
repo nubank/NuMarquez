@@ -90,9 +90,11 @@ function getFormattedDateTime() {
 
 app.post('/api/loguserinfo', (req, res) => {
   const { email = {} } = req.body;
+  const encodedEmail = Buffer.from(email).toString('base64');
+
   const logData = {
     accessLog: {
-      email,
+      email: encodedEmail,
       dateTime: getFormattedDateTime(),
     },
   };
