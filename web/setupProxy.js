@@ -33,11 +33,31 @@ setInterval(() => {
 }, 1000)
 
 const app = express()
+app.use(express.json());
 promClient.collectDefaultMetrics();
 
+// Create a Registry to register the metrics
+const register = new client.Registry();
+
+// Define a Counter metric for unique user logins
+const uniqueUserLoginCounter = new client.Counter({
+  name: 'unique_user_login_total',
+  help: 'Total number of unique user logins',
+});
+
+// Register the counter
+register.registerMetric(uniqueUserLoginCounter);
+client.collectDefaultMetrics({ register });
+const uniqueUsers = new Set();
+
+// Endpoint to expose metrics
 app.get('/metrics', async (req, res) => {
-  res.set('Content-Type', promClient.register.contentType);
-  res.end(await promClient.register.metrics());
+  try {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  } catch (ex) {
+    res.status(500).end(ex);
+  }
 });
 
 const distPath = path.join(__dirname, 'dist')
@@ -89,8 +109,19 @@ function getFormattedDateTime() {
 }
 
 app.post('/api/loguserinfo', (req, res) => {
-  const { email = {} } = req.body;
+  const { email = '' } = req.body;
+
+  if (typeof email !== 'string') {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
+
   const encodedEmail = Buffer.from(email).toString('base64');
+
+  // Check if the user is logging in for the first time
+  if (!uniqueUsers.has(encodedEmail)) {
+    uniqueUsers.add(encodedEmail);
+    uniqueUserLoginCounter.inc(); 
+  }
 
   const logData = {
     accessLog: {
