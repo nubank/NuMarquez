@@ -69,6 +69,7 @@ app.use('/', express.static(distPath))
 app.use('/datasets', express.static(distPath))
 app.use('/events', express.static(distPath))
 app.use('/lineage', express.static(distPath))
+app.use('/jobs', express.static(distPath))
 app.use('/datasets/column-level', express.static(distPath))
 
 // Proxy API requests
