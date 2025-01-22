@@ -1,11 +1,11 @@
 
 const { createProxyMiddleware } = require('http-proxy-middleware')
 const promClient = require('prom-client')
+const client = require('prom-client')
 
 const express = require('express')
 const router = express.Router()
 const path = require('path')
-const { access } = require('fs')
 
 const environmentVariable = (variableName) => {
   const value = process.env[variableName]
