@@ -1,11 +1,26 @@
 
-const { createProxyMiddleware } = require('http-proxy-middleware')
-const promClient = require('prom-client')
-const client = require('prom-client')
-
 const express = require('express')
-const router = express.Router()
+const { createProxyMiddleware } = require('http-proxy-middleware')
 const path = require('path')
+const appMetrics = require('./services/appMetrics');
+
+const app = express();
+const router = express.Router();
+const port = environmentVariable("WEB_PORT")
+const distPath = path.join(__dirname, 'dist')
+
+// Initialize Metrics
+const metrics = new appMetrics();
+
+// Middleware to expose /metrics endpoint
+app.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', metrics.register.contentType);
+    res.end(await metrics.getMetrics());
+  } catch (ex) {
+    res.status(500).end(ex);
+  }
+});
 
 const environmentVariable = (variableName) => {
   const value = process.env[variableName]
@@ -22,47 +37,7 @@ const apiOptions = {
   changeOrigin: true,
 }
 
-const uptimeGauge = new promClient.Gauge({
-  name: 'app_uptime_seconds',
-  help: 'Application uptime in seconds',
-})
-
-// Update uptime metric every second
-setInterval(() => {
-  uptimeGauge.set(process.uptime())
-}, 1000)
-
-const app = express()
 app.use(express.json());
-promClient.collectDefaultMetrics();
-
-// Create a Registry to register the metrics
-const register = new client.Registry();
-
-// Define a Counter metric for unique user logins
-const uniqueUserLoginCounter = new client.Counter({
-  name: 'unique_user_login_total',
-  help: 'Total number of unique user logins',
-});
-
-// Register the counter
-register.registerMetric(uniqueUserLoginCounter);
-client.collectDefaultMetrics({ register });
-const uniqueUsers = new Set();
-
-// Endpoint to expose metrics
-app.get('/metrics', async (req, res) => {
-  try {
-    res.set('Content-Type', register.contentType);
-    res.end(await register.metrics());
-  } catch (ex) {
-    res.status(500).end(ex);
-  }
-});
-
-const distPath = path.join(__dirname, 'dist')
-
-const port = environmentVariable("WEB_PORT")
 
 // Serve static files for specific routes
 app.use('/', express.static(distPath))
@@ -109,6 +84,7 @@ function getFormattedDateTime() {
   return `${year}-${month}-${day} ${hour}:${minute}:${second}.${ms}`;
 }
 
+// Endpoint to log user info and increment counters
 app.post('/api/loguserinfo', (req, res) => {
   const { email = '' } = req.body;
 
@@ -118,11 +94,11 @@ app.post('/api/loguserinfo', (req, res) => {
 
   const encodedEmail = Buffer.from(email).toString('base64');
 
-  // Check if the user is logging in for the first time
-  if (!uniqueUsers.has(encodedEmail)) {
-    uniqueUsers.add(encodedEmail);
-    uniqueUserLoginCounter.inc(); 
-  }
+  // Increment total logins counter
+  metrics.incrementTotalLogins(); 
+
+  // Check if the user is logging in for the first time in the last 8 hours
+  metrics.incrementUniqueLogins(email);
 
   const logData = {
     accessLog: {
@@ -133,4 +109,7 @@ app.post('/api/loguserinfo', (req, res) => {
   console.log(JSON.stringify(logData));
   res.sendStatus(200);
 });
+
+// Export the app for testing or further integration
+module.exports = app;
 
