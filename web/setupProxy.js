@@ -6,7 +6,6 @@ const appMetrics = require('./services/appMetrics');
 
 const app = express();
 const router = express.Router();
-const port = environmentVariable("WEB_PORT")
 const distPath = path.join(__dirname, 'dist')
 
 // Initialize Metrics
@@ -31,6 +30,8 @@ const environmentVariable = (variableName) => {
   }
   return value
 }
+
+const port = environmentVariable("WEB_PORT")
 
 const apiOptions = {
   target: `http://${environmentVariable("MARQUEZ_HOST")}:${environmentVariable("MARQUEZ_PORT")}/`,
