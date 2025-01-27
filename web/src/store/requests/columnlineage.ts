@@ -13,10 +13,11 @@ export const getColumnLineage = async (
   nodeType: JobOrDataset,
   namespace: string,
   name: string,
-  depth: number
+  depth: number,
+  withDownstream: boolean
 ) => {
   const nodeId = generateNodeId(nodeType, namespace, name)
   // Node ID cannot be URL encoded
-  const url = `${API_URL}/column-lineage?nodeId=${nodeId}&depth=${depth}&withDownstream=true`
+  const url = `${API_URL}/column-lineage?nodeId=${nodeId}&depth=${depth}&withDownstream=${withDownstream}`
   return genericFetchWrapper(url, { method: 'GET' }, 'fetchColumnLineage')
 }

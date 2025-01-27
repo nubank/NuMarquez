@@ -64,7 +64,7 @@ export const ActionBar = ({
           <IconButton
             size={'small'}
             sx={{ mr: 2 }}
-            onClick={() => navigate(nodeType === 'JOB' ? '/' : '/datasets')}
+            onClick={() => navigate(nodeType === 'JOB' ? '/jobs' : '/')}
           >
             <ArrowBackIosRounded fontSize={'small'} />
           </IconButton>
@@ -96,59 +96,66 @@ export const ActionBar = ({
             size={'small'}
             onClick={() => {
               if (namespace && name) {
-                fetchLineage(nodeType, namespace, name, depth)
+                fetchLineage(nodeType, namespace, name, depth, true)
               }
             }}
           >
             <Refresh fontSize={'small'} />
           </IconButton>
         </MQTooltip>
-        <TextField
-          id='column-level-depth'
-          type='number'
-          inputProps={{ min: 0 }}
-          label='Depth'
-          variant='outlined'
-          size='small'
-          sx={{ width: '80px', mr: 2 }}
-          value={depth}
-          onChange={(e) => {
-            setDepth(isNaN(parseInt(e.target.value)) ? 0 : parseInt(e.target.value))
-            searchParams.set('depth', e.target.value)
-            setSearchParams(searchParams)
-          }}
-        />
+        <MQTooltip title={'Select the number of levels to display in the lineage'}>
+          <TextField
+            id='column-level-depth'
+            type='number'
+            inputProps={{ min: 0 }}
+            label='Depth'
+            variant='outlined'
+            size='small'
+            sx={{ width: '80px', mr: 2 }}
+            value={depth}
+            onChange={(e) => {
+              setDepth(isNaN(parseInt(e.target.value)) ? 0 : parseInt(e.target.value))
+              searchParams.set('depth', e.target.value)
+              setSearchParams(searchParams)
+            }}
+          />
+        </MQTooltip>
+
         <Box display={'flex'} flexDirection={'column'}>
-          <FormControlLabel
-            control={
-              <Switch
-                size={'small'}
-                value={isFull}
-                defaultChecked={searchParams.get('isFull') === 'true'}
-                onChange={(_, checked) => {
-                  setIsFull(checked)
-                  searchParams.set('isFull', checked.toString())
-                  setSearchParams(searchParams)
-                }}
-              />
-            }
-            label={<MqText font={'mono'}>Full Graph</MqText>}
-          />
-          <FormControlLabel
-            control={
-              <Switch
-                size={'small'}
-                checked={isCompact}
-                defaultChecked={searchParams.get('isCompact') === 'true'}
-                onChange={(_, checked) => {
-                  setIsCompact(checked)
-                  searchParams.set('isCompact', checked.toString())
-                  setSearchParams(searchParams)
-                }}
-              />
-            }
-            label={<MqText font={'mono'}>Compact Nodes</MqText>}
-          />
+          <MQTooltip title={'Show all dependencies, including indirect ones'}>
+            <FormControlLabel
+              control={
+                <Switch
+                  size={'small'}
+                  value={isFull}
+                  defaultChecked={searchParams.get('isFull') === 'true'}
+                  onChange={(_, checked) => {
+                    setIsFull(checked)
+                    searchParams.set('isFull', checked.toString())
+                    setSearchParams(searchParams)
+                  }}
+                />
+              }
+              label={<MqText font={'mono'}>All dependencies</MqText>}
+            />
+          </MQTooltip>
+          <MQTooltip title={'Hide column names for each dataset'}>
+            <FormControlLabel
+              control={
+                <Switch
+                  size={'small'}
+                  checked={isCompact}
+                  defaultChecked={searchParams.get('isCompact') === 'true'}
+                  onChange={(_, checked) => {
+                    setIsCompact(checked)
+                    searchParams.set('isCompact', checked.toString())
+                    setSearchParams(searchParams)
+                  }}
+                />
+              }
+              label={<MqText font={'mono'}>Hide column names</MqText>}
+            />
+          </MQTooltip>
         </Box>
       </Box>
     </Box>

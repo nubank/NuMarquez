@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 export const oktaAuth = new OktaAuth({
   issuer: 'https://nubank.okta.com/oauth2/default',
   clientId: '0oa20d6n6jb6nG5Mn0h8',
+
   redirectUri: window.location.origin + '/login/callback',
   pkce: true,
   scopes: ['openid', 'profile', 'email'],
@@ -19,7 +20,7 @@ interface AuthContextType {
   login: () => Promise<void>
   logout: () => Promise<void>
   oktaAuth: OktaAuth
-  setUser: (user: any) => void 
+  setUser: (user: any) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -67,7 +68,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [])
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, loading, login, logout, oktaAuth, setUser }}>
+    <AuthContext.Provider
+      value={{ isAuthenticated, user, loading, login, logout, oktaAuth, setUser }}
+    >
       {children}
     </AuthContext.Provider>
   )

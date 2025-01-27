@@ -39,23 +39,17 @@ const ColumnLevel: React.FC<ColumnLevelProps> = ({
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [depth, setDepth] = useState(Number(searchParams.get('depth')) || 2)
+  const [withDownstream, setWithDownstream] = useState(
+    searchParams.get('withDownstream') === 'true'
+  )
 
   const graphControls = useRef<ZoomPanControls>()
 
   useEffect(() => {
     if (name && namespace) {
-      fetchColumnLineage('DATASET', namespace, name, depth)
+      fetchColumnLineage('DATASET', namespace, name, depth, withDownstream)
     }
-  }, [name, namespace, depth])
-
-  // const column = searchParams.get('column')
-  // useEffect(() => {
-  //   if (column) {
-  //     graphControls.current?.centerOnPositionedNode(
-  //       `datasetField:${namespace}:${parseColumnLineageNode(column).dataset}`
-  //     )
-  //   }
-  // }, [column])
+  }, [name, namespace, depth, withDownstream])
 
   if (!columnLineage) {
     return <div />
@@ -83,7 +77,13 @@ const ColumnLevel: React.FC<ColumnLevelProps> = ({
 
   return (
     <>
-      <ActionBar fetchColumnLineage={fetchColumnLineage} depth={depth} setDepth={setDepth} />
+      <ActionBar
+        fetchColumnLineage={fetchColumnLineage}
+        depth={depth}
+        setDepth={setDepth}
+        withDownstream={withDownstream}
+        setWithDownstream={setWithDownstream}
+      />
       <Box height={`calc(100vh - ${HEADER_HEIGHT}px - 64px)`}>
         <Drawer
           anchor={'right'}
