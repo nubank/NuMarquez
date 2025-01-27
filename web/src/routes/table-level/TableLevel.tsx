@@ -50,7 +50,7 @@ const ColumnLevel: React.FC<ColumnLevelProps> = ({
 
   useEffect(() => {
     if (name && namespace && nodeType) {
-      fetchLineage(nodeType as JobOrDataset, namespace, name, depth)
+      fetchLineage(nodeType as JobOrDataset, namespace, name, depth, true) // true by default
     }
   }, [name, namespace, depth])
 
