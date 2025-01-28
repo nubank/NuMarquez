@@ -1,14 +1,21 @@
 import { ArrowBackIosRounded, Refresh } from '@mui/icons-material'
-import { Divider, FormControlLabel, Switch, TextField } from '@mui/material'
+import {
+  Box,
+  CircularProgress,
+  Divider,
+  FormControlLabel,
+  IconButton,
+  Switch,
+  TextField,
+} from '@mui/material'
 import { HEADER_HEIGHT, theme } from '../../helpers/theme'
 import { fetchLineage } from '../../store/actionCreators'
+import { getColumnLineage } from '../../store/requests/columnlineage'
 import { truncateText } from '../../helpers/text'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import Box from '@mui/material/Box'
-import IconButton from '@mui/material/IconButton'
 import MQTooltip from '../../components/core/tooltip/MQTooltip'
 import MqText from '../../components/core/text/MqText'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 
 interface ActionBarProps {
   nodeType: 'DATASET' | 'JOB'
@@ -35,7 +42,25 @@ export const ActionBar = ({
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  React.useEffect(() => {
+  const [loading, setLoading] = useState(false)
+
+  const handleDepthChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLoading(true)
+    console.log(loading)
+
+    const newDepth = isNaN(parseInt(e.target.value)) ? 0 : parseInt(e.target.value)
+    setDepth(newDepth)
+    searchParams.set('depth', e.target.value)
+    setSearchParams(searchParams)
+
+    if (namespace && name) {
+      await getColumnLineage(nodeType, namespace, name, newDepth, true)
+      console.log('chamou')
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => {
     if (!searchParams.has('isCompact')) {
       searchParams.set('isCompact', 'true')
       setSearchParams(searchParams)
@@ -104,24 +129,25 @@ export const ActionBar = ({
           </IconButton>
         </MQTooltip>
         <MQTooltip title={'Select the number of levels to display in the lineage'}>
-          <TextField
-            id='column-level-depth'
-            type='number'
-            inputProps={{ min: 0 }}
-            label='Depth'
-            variant='outlined'
-            size='small'
-            sx={{ width: '80px', mr: 2 }}
-            value={depth}
-            onChange={(e) => {
-              setDepth(isNaN(parseInt(e.target.value)) ? 0 : parseInt(e.target.value))
-              searchParams.set('depth', e.target.value)
-              setSearchParams(searchParams)
-            }}
-          />
+          {loading ? (
+            <CircularProgress size={40} sx={{ width: '80px', mr: 2 }} />
+          ) : (
+            <TextField
+              id='column-level-depth'
+              type='number'
+              inputProps={{ min: 0 }}
+              label='Depth'
+              variant='outlined'
+              size='small'
+              sx={{ width: '80px' }}
+              value={depth}
+              onChange={handleDepthChange}
+              disabled={loading}
+            />
+          )}
         </MQTooltip>
 
-        <Box display={'flex'} flexDirection={'column'}>
+        <Box display={'flex'} flexDirection={'column'} sx={{ marginLeft: 2 }}>
           <MQTooltip title={'Show all dependencies, including indirect ones'}>
             <FormControlLabel
               control={
