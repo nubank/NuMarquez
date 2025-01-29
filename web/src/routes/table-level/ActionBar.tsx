@@ -10,7 +10,7 @@ import {
 } from '@mui/material'
 import { HEADER_HEIGHT, theme } from '../../helpers/theme'
 import { fetchLineage } from '../../store/actionCreators'
-import { getColumnLineage } from '../../store/requests/columnlineage'
+import { getLineage } from '../../store/requests/lineage'
 import { truncateText } from '../../helpers/text'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import MQTooltip from '../../components/core/tooltip/MQTooltip'
@@ -54,7 +54,7 @@ export const ActionBar = ({
     setSearchParams(searchParams)
 
     if (namespace && name) {
-      await getColumnLineage(nodeType, namespace, name, newDepth, true)
+      await getLineage(nodeType, namespace, name, newDepth)
       console.log('chamou')
     }
     setLoading(false)
