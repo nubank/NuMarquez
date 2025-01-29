@@ -8,6 +8,7 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  SelectChangeEvent,
   TextField,
 } from '@mui/material'
 import { HEADER_HEIGHT, theme } from '../../helpers/theme'
@@ -27,7 +28,6 @@ interface ActionBarProps {
 }
 
 export const ActionBar = ({
-  fetchColumnLineage,
   depth,
   setDepth,
   withDownstream,
@@ -49,6 +49,20 @@ export const ActionBar = ({
 
     if (namespace && name) {
       await getColumnLineage('DATASET', namespace, name, newDepth, withDownstream)
+    }
+    setLoading(false)
+  }
+
+  const handleDirectionChange = async (e: SelectChangeEvent<'Both' | 'Upstream'>) => {
+    setLoading(true)
+
+    const newValue = e.target.value === 'Both'
+    setWithDownstream(newValue)
+    searchParams.set('withDownstream', newValue.toString())
+    setSearchParams(searchParams)
+
+    if (namespace && name) {
+      await getColumnLineage('DATASET', namespace, name, depth, newValue)
     }
     setLoading(false)
   }
@@ -93,51 +107,44 @@ export const ActionBar = ({
         </Box>
       </Box>
       <Box display={'flex'} alignItems={'center'}>
-        <MQTooltip
-          title={'Expand to the left (upstream) or in both directions (upstream and downstream)'}
-          placement='left-end'
-        >
-          <FormControl size='small' sx={{ width: '150px', mr: 2 }}>
-            <InputLabel id='direction-label'>Direction</InputLabel>
-            <Select
-              labelId='direction-label'
-              label='Direction'
-              id='direction-label'
-              size='small'
-              value={withDownstream ? 'Both' : 'Upstream'}
-              onChange={(e) => {
-                const newValue = e.target.value === 'Both'
-                setWithDownstream(newValue)
-                searchParams.set('withDownstream', newValue.toString())
-                setSearchParams(searchParams)
-
-                if (namespace && name) {
-                  fetchColumnLineage('DATASET', namespace, name, depth, newValue)
-                }
-              }}
-              renderValue={(value) => (
-                <Box display='flex' alignItems='center'>
-                  {value === 'Upstream' && <ArrowBack fontSize='small' sx={{ mr: 1 }} />}
-                  {value === 'Both' && <SwapHoriz fontSize='small' sx={{ mr: 1 }} />}
-                  {value}
-                </Box>
-              )}
-            >
-              <MenuItem value={'Upstream'} sx={{ display: 'flex', alignItems: 'center' }}>
-                <ArrowBack fontSize='small' sx={{ mr: 1 }} />
-                Upstream
-              </MenuItem>
-              <MenuItem value={'Both'} sx={{ display: 'flex', alignItems: 'center' }}>
-                <SwapHoriz fontSize='small' sx={{ mr: 1 }} />
-                Both
-              </MenuItem>
-            </Select>
-          </FormControl>
-        </MQTooltip>
         {loading ? (
-          <CircularProgress size={40} sx={{ width: '80px' }} />
+          <CircularProgress size={40} sx={{ width: '150px', mr: 2 }} />
         ) : (
           <>
+            <MQTooltip
+              title={
+                'Expand to the left (upstream) or in both directions (upstream and downstream)'
+              }
+              placement='left-end'
+            >
+              <FormControl size='small' sx={{ width: '150px', mr: 2 }}>
+                <InputLabel id='direction-label'>Direction</InputLabel>
+                <Select
+                  labelId='direction-label'
+                  label='Direction'
+                  id='direction-label'
+                  size='small'
+                  value={withDownstream ? 'Both' : 'Upstream'}
+                  onChange={handleDirectionChange}
+                  renderValue={(value) => (
+                    <Box display='flex' alignItems='center'>
+                      {value === 'Upstream' && <ArrowBack fontSize='small' sx={{ mr: 1 }} />}
+                      {value === 'Both' && <SwapHoriz fontSize='small' sx={{ mr: 1 }} />}
+                      {value}
+                    </Box>
+                  )}
+                >
+                  <MenuItem value={'Upstream'} sx={{ display: 'flex', alignItems: 'center' }}>
+                    <ArrowBack fontSize='small' sx={{ mr: 1 }} />
+                    Upstream
+                  </MenuItem>
+                  <MenuItem value={'Both'} sx={{ display: 'flex', alignItems: 'center' }}>
+                    <SwapHoriz fontSize='small' sx={{ mr: 1 }} />
+                    Both
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </MQTooltip>
             <MQTooltip title='Select the number of levels to display in the lineage'>
               <TextField
                 id='column-level-depth'
