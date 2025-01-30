@@ -47,6 +47,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (loggedIn) {
           const userInfo = await oktaAuth.getUser()
           setUser(userInfo)
+          await fetch('/api/loguserinfo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userInfo),
+          });
         } else {
           setUser(null)
         }
