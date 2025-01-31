@@ -46,7 +46,6 @@ export const ActionBar = ({
 
   const handleDepthChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setLoading(true)
-    console.log(loading)
 
     const newDepth = isNaN(parseInt(e.target.value)) ? 0 : parseInt(e.target.value)
     setDepth(newDepth)
@@ -55,7 +54,6 @@ export const ActionBar = ({
 
     if (namespace && name) {
       await getLineage(nodeType, namespace, name, newDepth)
-      console.log('chamou')
     }
     setLoading(false)
   }
