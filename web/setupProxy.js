@@ -40,17 +40,17 @@ const apiOptions = {
 
 app.use(express.json());
 
-// Serve static files for specific routes
-app.use('/', express.static(distPath))
-app.use('/datasets', express.static(distPath))
-app.use('/events', express.static(distPath))
-app.use('/lineage', express.static(distPath))
-app.use('/jobs', express.static(distPath))
-app.use('/datasets/column-level', express.static(distPath))
-
 // Proxy API requests
 +app.use('/api/v1', createProxyMiddleware(apiOptions))
 app.use('/api/v2beta', createProxyMiddleware(apiOptions))
+app.use('/', express.static(path))
+app.use('/jobs', express.static(path))
+app.use('/datasets', express.static(path))
+app.use('/events', express.static(path))
+app.use('/lineage/:type/:namespace/:name', express.static(path))
+app.use('/datasets/column-level/:namespace/:name', express.static(path))
+app.use(createProxyMiddleware('/api/v1', apiOptions))
+app.use(createProxyMiddleware('/api/v2beta', apiOptions))
 
 // Healthcheck route
 router.get('/healthcheck', (req, res) => {
