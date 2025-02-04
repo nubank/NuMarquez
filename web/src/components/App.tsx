@@ -25,13 +25,14 @@ import Header from './header/Header'
 import Jobs from '../routes/jobs/Jobs'
 import Login from './Login'
 import LoginCallback from './LoginCallback'
-import React, { ReactElement } from 'react'
+import React, { ReactElement, useEffect } from 'react'
 import Sidenav from './sidenav/Sidenav'
 import TableLevel from '../routes/table-level/TableLevel'
 import Toast from './Toast'
 import createRootReducer from '../store/reducers'
 import createSagaMiddleware from 'redux-saga'
 import rootSaga from '../store/sagas'
+import initializeGA from './ga4'
 
 const sagaMiddleware = createSagaMiddleware({
   onError: (error, _sagaStackIgnored) => {
@@ -51,6 +52,9 @@ sagaMiddleware.run(rootSaga)
 const TITLE = 'Nu Data Lineage'
 
 const App = (): ReactElement => {
+  useEffect(() => {
+    initializeGA();
+  }, []);
   return (
     <ErrorBoundary>
       <AuthProvider>
