@@ -90,7 +90,6 @@ const Datasets: React.FC<DatasetsProps> = ({
 
   React.useEffect(() => {
     return () => {
-      // on unmount
       resetDatasets()
     }
   }, [])
@@ -260,7 +259,7 @@ const Datasets: React.FC<DatasetsProps> = ({
                             {dataset.columnLineage ? (
                               <MqText
                                 link
-                                linkTo={`column-level/${encodeURIComponent(
+                                linkTo={`/datasets/column-level/${encodeURIComponent(
                                   encodeURIComponent(dataset.id.namespace)
                                 )}/${encodeURIComponent(dataset.id.name)}`}
                               >

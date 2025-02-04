@@ -55,7 +55,7 @@ const ColumnLevel: React.FC<ColumnLevelProps> = ({
   }, [name, namespace, depth])
 
   if (!lineage) {
-    return <div />
+    return <div>Lineage not found</div>
   }
 
   const handleScaleZoom = (inOrOut: 'in' | 'out') => {
