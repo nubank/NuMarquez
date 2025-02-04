@@ -10,7 +10,7 @@ import { NotFound } from '../routes/not-found/NotFound'
 import { PrivateRoute } from './PrivateRoute'
 import { Provider } from 'react-redux'
 import { ReduxRouter, createRouterMiddleware } from '@lagunovsky/redux-react-router'
-import { Route, Routes } from 'react-router-dom'
+import { Route, Routes, useLocation } from 'react-router-dom'
 import { StyledEngineProvider, ThemeProvider } from '@mui/material/styles'
 import { applyMiddleware, createStore } from 'redux'
 import { composeWithDevTools } from '@redux-devtools/extension'
@@ -32,7 +32,7 @@ import Toast from './Toast'
 import createRootReducer from '../store/reducers'
 import createSagaMiddleware from 'redux-saga'
 import rootSaga from '../store/sagas'
-import initializeGA from './ga4'
+import { initializeGA, trackPageView } from './ga4';
 
 const sagaMiddleware = createSagaMiddleware({
   onError: (error, _sagaStackIgnored) => {
@@ -52,9 +52,15 @@ sagaMiddleware.run(rootSaga)
 const TITLE = 'Nu Data Lineage'
 
 const App = (): ReactElement => {
+  const location = useLocation();
+
   useEffect(() => {
     initializeGA();
   }, []);
+
+  useEffect(() => {
+    trackPageView();
+  }, [location]);
   return (
     <ErrorBoundary>
       <AuthProvider>

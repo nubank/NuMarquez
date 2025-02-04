@@ -1,17 +1,19 @@
-// Copyright 2018-2023 contributors to the Marquez project
-// SPDX-License-Identifier: Apache-2.0
-
-import { AppBar, Toolbar } from '@mui/material'
-import { DRAWER_WIDTH } from '../../helpers/theme'
-import { createTheme } from '@mui/material/styles'
-import { useTheme } from '@emotion/react'
-import Box from '@mui/material/Box'
-import React, { ReactElement } from 'react'
-import Search from '../search/Search'
-import { PrivateRoute } from '../PrivateRoute'
+import { AppBar, Toolbar } from '@mui/material';
+import { DRAWER_WIDTH } from '../../helpers/theme';
+import { createTheme } from '@mui/material/styles';
+import { useTheme } from '@emotion/react';
+import Box from '@mui/material/Box';
+import React, { ReactElement } from 'react';
+import Search from '../search/Search';
+import { PrivateRoute } from '../PrivateRoute';
+import { trackEvent } from '../ga4';
 
 const Header = (): ReactElement => {
-  const theme = createTheme(useTheme())
+  const theme = createTheme(useTheme());
+
+  const handleSearch = (query: string) => {
+    trackEvent('Header', 'Search Performed', query);
+  };
 
   return (
     <PrivateRoute>
@@ -35,13 +37,13 @@ const Header = (): ReactElement => {
             }}
           >
             <Box display={'flex'} alignItems={'center'}>
-              <Search />
+              <Search onSearch={handleSearch} />
             </Box>
           </Box>
         </Toolbar>
       </AppBar>
     </PrivateRoute>
-  )
-}
+  );
+};
 
-export default Header
+export default Header;

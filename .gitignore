@@ -25,6 +25,7 @@ examples/airflow/dags/
 examples/airflow/openlineage.env
 examples/airflow/requirements.txt
 examples/airflow/whl
+./node_modules/
 out/*
 venv
 

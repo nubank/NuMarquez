@@ -1,41 +1,38 @@
-// Copyright 2018-2023 contributors to the Marquez project
-// SPDX-License-Identifier: Apache-2.0
-
-import React from 'react'
-import SVG from 'react-inlinesvg'
-
-import { Link, useLocation } from 'react-router-dom'
-import Box from '@mui/material/Box'
-
-import { DRAWER_WIDTH, HEADER_HEIGHT } from '../../helpers/theme'
-import { Divider, Drawer, createTheme } from '@mui/material'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCogs, faDatabase } from '@fortawesome/free-solid-svg-icons'
-import MqIconButton from '../core/icon-button/MqIconButton'
-
-// for i18n
-import '../../i18n/config'
-import { FormControl, MenuItem, Select } from '@mui/material'
-import { MqInputNoIcon } from '../core/input-base/MqInputBase'
-import { useTheme } from '@emotion/react'
-
-import { Dashboard } from '@mui/icons-material'
-import { PrivateRoute } from '../PrivateRoute'
-import HelpCenterIcon from '@mui/icons-material/HelpCenter'
-import SupportAgentIcon from '@mui/icons-material/SupportAgent'
-import iconSearchArrow from '../../img/iconSearchArrow.svg'
-import nu_logo from './logoNu.svg'
+import React from 'react';
+import SVG from 'react-inlinesvg';
+import { Link, useLocation } from 'react-router-dom';
+import Box from '@mui/material/Box';
+import { DRAWER_WIDTH, HEADER_HEIGHT } from '../../helpers/theme';
+import { Divider, Drawer, createTheme } from '@mui/material';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCogs, faDatabase } from '@fortawesome/free-solid-svg-icons';
+import MqIconButton from '../core/icon-button/MqIconButton';
+import '../../i18n/config';
+import { FormControl, MenuItem, Select } from '@mui/material';
+import { MqInputNoIcon } from '../core/input-base/MqInputBase';
+import { useTheme } from '@emotion/react';
+import { Dashboard } from '@mui/icons-material';
+import { PrivateRoute } from '../PrivateRoute';
+import HelpCenterIcon from '@mui/icons-material/HelpCenter';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import iconSearchArrow from '../../img/iconSearchArrow.svg';
+import nu_logo from './logoNu.svg';
+import { trackEvent } from '../ga4';
 
 interface SidenavProps {}
 
 const Sidenav: React.FC<SidenavProps> = () => {
-  const i18next = require('i18next')
+  const i18next = require('i18next');
   const changeLanguage = (lng: string) => {
-    i18next.changeLanguage(lng)
-  }
-  const theme = createTheme(useTheme())
+    i18next.changeLanguage(lng);
+  };
+  const theme = createTheme(useTheme());
 
-  const location = useLocation()
+  const location = useLocation();
+
+  const handleNavClick = (category: string, action: string) => {
+    trackEvent(category, action);
+  };
 
   return (
     <PrivateRoute>
@@ -76,7 +73,7 @@ const Sidenav: React.FC<SidenavProps> = () => {
               justifyContent={'center'}
               height={HEADER_HEIGHT}
             >
-              <Link to='/'>
+              <Link to='/' onClick={() => handleNavClick('Sidenav', 'Logo Clicked')}>
                 <img
                   src={nu_logo}
                   height={60}
@@ -91,6 +88,7 @@ const Sidenav: React.FC<SidenavProps> = () => {
               id={'datasetsDrawerButton'}
               title={i18next.t('sidenav.datasets')}
               active={location.pathname === '/'}
+              onClick={() => handleNavClick('Sidenav', 'Datasets Clicked')}
             >
               <FontAwesomeIcon icon={faDatabase} fontSize={20} />
             </MqIconButton>
@@ -99,15 +97,16 @@ const Sidenav: React.FC<SidenavProps> = () => {
               id={'jobsDrawerButton'}
               title={i18next.t('sidenav.jobs')}
               active={location.pathname === '/jobs'}
+              onClick={() => handleNavClick('Sidenav', 'Jobs Clicked')}
             >
               <FontAwesomeIcon icon={faCogs} fontSize={20} />
             </MqIconButton>
-
             <MqIconButton
               id={'eventsButton'}
               to={'/events'}
               title={i18next.t('sidenav.events')}
               active={location.pathname === '/events'}
+              onClick={() => handleNavClick('Sidenav', 'Events Clicked')}
             >
               <SVG src={iconSearchArrow} width={'20px'} />
             </MqIconButton>
@@ -116,6 +115,7 @@ const Sidenav: React.FC<SidenavProps> = () => {
               id={'homeDrawerButton'}
               title={i18next.t('sidenav.dataOps')}
               active={location.pathname === '/dashboard'}
+              onClick={() => handleNavClick('Sidenav', 'Dashboard Clicked')}
             >
               <Dashboard />
             </MqIconButton>
@@ -137,6 +137,7 @@ const Sidenav: React.FC<SidenavProps> = () => {
               target='_blank'
               title={i18next.t('sidenav.documentation')}
               active={location.pathname === '/documentation'}
+              onClick={() => handleNavClick('Sidenav', 'Documentation Clicked')}
             >
               <HelpCenterIcon sx={{ fontSize: 20 }} />
             </MqIconButton>
@@ -148,6 +149,7 @@ const Sidenav: React.FC<SidenavProps> = () => {
               target='_blank'
               title={i18next.t('sidenav.support')}
               active={location.pathname === '/support'}
+              onClick={() => handleNavClick('Sidenav', 'Support Clicked')}
             >
               <SupportAgentIcon sx={{ fontSize: 20 }} />
             </MqIconButton>
@@ -163,8 +165,8 @@ const Sidenav: React.FC<SidenavProps> = () => {
                 fullWidth
                 value={i18next.resolvedLanguage}
                 onChange={(event) => {
-                  changeLanguage(event.target.value as string)
-                  window.location.reload()
+                  changeLanguage(event.target.value as string);
+                  window.location.reload();
                 }}
                 input={<MqInputNoIcon />}
               >
@@ -186,7 +188,7 @@ const Sidenav: React.FC<SidenavProps> = () => {
         </Box>
       </Drawer>
     </PrivateRoute>
-  )
-}
+  );
+};
 
-export default Sidenav
+export default Sidenav;
