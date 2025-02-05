@@ -37,6 +37,7 @@ import MqText from '../../components/core/text/MqText'
 import NamespaceSelect from '../../components/namespace-select/NamespaceSelect'
 import PageSizeSelector from '../../components/paging/PageSizeSelector'
 import React, { useState } from 'react'
+import { trackEvent } from '../../components/ga4'
 
 interface StateProps {
   jobs: Job[]
@@ -89,6 +90,8 @@ const Jobs: React.FC<JobsProps> = ({
     })
 
     fetchJobs(selectedNamespace, newPageSize, newCurrentPage * newPageSize)
+
+    trackEvent('Jobs', 'Change Page Size', newPageSize.toString())
   }
 
   const handleClickPage = (direction: 'prev' | 'next') => {
@@ -108,6 +111,8 @@ const Jobs: React.FC<JobsProps> = ({
 
     window.scrollTo(0, 0)
     setState({ ...state, page: directionPage })
+
+    trackEvent('Jobs', 'Change Page', direction)
   }
 
   React.useEffect(() => {
@@ -151,6 +156,7 @@ const Jobs: React.FC<JobsProps> = ({
               onClick={() => {
                 if (selectedNamespace) {
                   fetchJobs(selectedNamespace, pageSize, state.page * pageSize)
+                  trackEvent('Jobs', 'Refresh Jobs')
                 }
               }}
             >
@@ -175,6 +181,7 @@ const Jobs: React.FC<JobsProps> = ({
                     onClick={() => {
                       if (selectedNamespace) {
                         fetchJobs(selectedNamespace, pageSize, currentPage * pageSize)
+                        trackEvent('Jobs', 'Refresh Jobs')
                       }
                     }}
                   >

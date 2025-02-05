@@ -41,6 +41,7 @@ import MqStatus from '../../components/core/status/MqStatus'
 import MqText from '../../components/core/text/MqText'
 import PageSizeSelector from '../../components/paging/PageSizeSelector'
 import React, { useEffect, useRef, useState } from 'react'
+import { trackEvent } from '../../components/ga4'
 import moment from 'moment'
 
 interface StateProps {
@@ -96,6 +97,7 @@ const Events: React.FC<EventsProps> = ({
 
     setPageSize(newPageSize)
     setCurrentPage(newCurrentPage)
+    trackEvent('Events', 'Change Page Size', newPageSize.toString())
 
     setSearchParams({
       ...Object.fromEntries(searchParams),
@@ -133,6 +135,7 @@ const Events: React.FC<EventsProps> = ({
 
     window.scrollTo(0, 0)
     setState({ ...state, page: directionPage })
+    trackEvent('Events', 'Change Page', direction)
   }
 
   const mounted = useRef<boolean>(false)

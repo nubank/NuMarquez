@@ -42,6 +42,7 @@ import MqText from '../../components/core/text/MqText'
 import NamespaceSelect from '../../components/namespace-select/NamespaceSelect'
 import PageSizeSelector from '../../components/paging/PageSizeSelector'
 import React, { useState } from 'react'
+import { trackEvent } from '../../components/ga4'
 
 interface StateProps {
   datasets: Dataset[]
@@ -101,6 +102,8 @@ const Datasets: React.FC<DatasetsProps> = ({
     setCurrentPage(newCurrentPage)
 
     fetchDatasets(selectedNamespace || '', newPageSize, newCurrentPage * newPageSize)
+
+    trackEvent('Datasets', 'Change Page Size', newPageSize.toString())
   }
 
   const handleClickPage = (direction: 'prev' | 'next') => {
@@ -117,7 +120,16 @@ const Datasets: React.FC<DatasetsProps> = ({
     // reset page scroll
     window.scrollTo(0, 0)
     setState({ ...state, page: directionPage })
+
+    trackEvent('Datasets', 'Change Page', direction)
   }
+
+  const handleRefresh = () => {
+    if (selectedNamespace) {
+      fetchDatasets(selectedNamespace, pageSize, state.page * pageSize);
+      trackEvent('Datasets', 'Refresh Datasets');
+    }
+  };
 
   const i18next = require('i18next')
   return (
@@ -139,16 +151,7 @@ const Datasets: React.FC<DatasetsProps> = ({
           {isDatasetsLoading && <CircularProgress size={16} />}
           <NamespaceSelect />
           <MQTooltip title={'Refresh'}>
-            <IconButton
-              sx={{ ml: 2 }}
-              color={'primary'}
-              size={'small'}
-              onClick={() => {
-                if (selectedNamespace) {
-                  fetchDatasets(selectedNamespace, pageSize, state.page * pageSize)
-                }
-              }}
-            >
+            <IconButton sx={{ ml: 2 }} color={'primary'} size={'small'} onClick={handleRefresh}>
               <Refresh fontSize={'small'} />
             </IconButton>
           </MQTooltip>
@@ -164,15 +167,7 @@ const Datasets: React.FC<DatasetsProps> = ({
               <MqEmpty title={i18next.t('datasets_route.empty_title')}>
                 <>
                   <MqText subdued>{i18next.t('datasets_route.empty_body')}</MqText>
-                  <Button
-                    color={'primary'}
-                    size={'small'}
-                    onClick={() => {
-                      if (selectedNamespace) {
-                        fetchDatasets(selectedNamespace, pageSize, state.page * pageSize)
-                      }
-                    }}
-                  >
+                  <Button color={'primary'} size={'small'} onClick={handleRefresh}>
                     Refresh
                   </Button>
                 </>
