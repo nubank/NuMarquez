@@ -1,89 +1,102 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Box, Chip, IconButton, CircularProgress } from '@mui/material';
-import { Close, SearchOutlined } from '@mui/icons-material';
-import { DRAWER_WIDTH, HEADER_HEIGHT, theme } from '../../helpers/theme';
-import { connect } from 'react-redux';
-import { useLocation } from 'react-router';
-import BaseSearch from './base-search/BaseSearch';
-import OpenSearch from './open-search/OpenSearch';
-import ClickAwayListener from '@mui/material/ClickAwayListener';
-import SearchPlaceholder from './SearchPlaceholder';
-import { IState } from '../../store/reducers';
-import { MqInputBase } from '../core/input-base/MqInputBase';
+import React, { useEffect, useRef, useState } from 'react'
+import { Box, Chip, IconButton, CircularProgress } from '@mui/material'
+import { Close, SearchOutlined } from '@mui/icons-material'
+import { DRAWER_WIDTH, HEADER_HEIGHT, theme } from '../../helpers/theme'
+import { connect } from 'react-redux'
+import { useLocation } from 'react-router'
+import BaseSearch from './base-search/BaseSearch'
+import OpenSearch from './open-search/OpenSearch'
+import ClickAwayListener from '@mui/material/ClickAwayListener'
+import SearchPlaceholder from './SearchPlaceholder'
+import { IState } from '../../store/reducers'
+import { MqInputBase } from '../core/input-base/MqInputBase'
+import { trackEvent } from '../ga4'
 
 interface StateProps {
-  isLoading: boolean;
+  isLoading: boolean
 }
 
 interface SearchProps extends StateProps {
-  onSearch: (query: string) => void; // Add onSearch prop
+  onSearch: (query: string) => void // Add onSearch prop
 }
 
 const useCmdKShortcut = (callback: () => void) => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
-        event.preventDefault(); // Prevent the default browser action
-        callback();
+        event.preventDefault() // Prevent the default browser action
+        callback()
       }
-    };
+    }
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown)
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [callback]);
-};
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [callback])
+}
 
 const useEscapeShortcut = (callback: () => void) => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        event.preventDefault(); // Prevent the default browser action
-        callback();
+        event.preventDefault() // Prevent the default browser action
+        callback()
       }
-    };
+    }
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown)
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [callback]);
-};
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [callback])
+}
 
 const Search: React.FC<SearchProps> = ({ isLoading, onSearch }) => {
-  const [search, setSearch] = useState('');
-  const [open, setOpen] = useState(true);
+  const [search, setSearch] = useState('')
+  const [open, setOpen] = useState(true)
 
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null)
 
   // focus on cmd + k
   useCmdKShortcut(() => {
     if (inputRef.current) {
-      inputRef.current.focus();
+      inputRef.current.focus()
     }
-  });
+  })
 
   useEffect(() => {
-    if (search === '') setOpen(false);
-  }, [search]);
+    if (search === '') setOpen(false)
+  }, [search])
 
   useEscapeShortcut(() => {
-    setOpen(false);
-  });
+    setOpen(false)
+  })
 
-  const location = useLocation();
+  const location = useLocation()
   useEffect(() => {
     // close search on a route change
-    setOpen(false);
-    setSearch('');
-  }, [location]);
+    setOpen(false)
+    setSearch('')
+  }, [location])
 
   const handleSearch = () => {
-    onSearch(search); // Call onSearch prop
-  };
+    onSearch(search) // Call onSearch prop
+    trackEvent('Search', 'Perform Search', search)
+  }
+
+  const handleFocus = () => {
+    setOpen(true);
+    trackEvent('Search', 'Focus Search Bar')
+  }
+
+  const handleClose = () => {
+    setOpen(false)
+    setSearch('')
+    trackEvent('Search', 'Close Search Bar')
+  }
 
   return (
     <Box width={`calc(100vw - ${DRAWER_WIDTH}px)`} position={'relative'} id={'searchContainer'}>
@@ -131,10 +144,7 @@ const Search: React.FC<SearchProps> = ({ isLoading, onSearch }) => {
                   color={'secondary'}
                   sx={{ mr: 1 }}
                   size={'small'}
-                  onClick={() => {
-                    setSearch('');
-                    setOpen(false);
-                  }}
+                  onClick={handleClose}
                 >
                   <Close />
                 </IconButton>
@@ -147,14 +157,14 @@ const Search: React.FC<SearchProps> = ({ isLoading, onSearch }) => {
               />
             </>
           }
-          onFocus={() => setOpen(true)}
+          onFocus={handleFocus}
           onChange={(event) => {
-            setSearch(event.target.value);
-            setOpen(true);
+            setSearch(event.target.value)
+            setOpen(true)
           }}
           onKeyPress={(event) => {
             if (event.key === 'Enter') {
-              handleSearch(); // Trigger search on Enter key press
+              handleSearch() // Trigger search on Enter key press
             }
           }}
           value={search}
@@ -164,10 +174,7 @@ const Search: React.FC<SearchProps> = ({ isLoading, onSearch }) => {
         <ClickAwayListener
           mouseEvent='onMouseDown'
           touchEvent='onTouchStart'
-          onClickAway={() => {
-            setOpen(false);
-            setSearch('');
-          }}
+          onClickAway={handleClose}
         >
           <Box>
             {open && search.length > 0 && (
@@ -207,11 +214,11 @@ const Search: React.FC<SearchProps> = ({ isLoading, onSearch }) => {
         </ClickAwayListener>
       </Box>
     </Box>
-  );
-};
+  )
+}
 
 const mapStateToProps = (state: IState) => ({
   isLoading: state.openSearchJobs.isLoading || state.openSearchDatasets.isLoading,
-});
+})
 
-export default connect(mapStateToProps)(Search);
+export default connect(mapStateToProps)(Search)

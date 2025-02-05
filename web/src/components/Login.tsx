@@ -5,17 +5,24 @@ import { useAuth } from '../auth/AuthContext'
 import MqText from './core/text/MqText'
 import React, { useEffect } from 'react'
 import nu_logo from './sidenav/logoNu.svg'
+import { trackEvent } from './ga4'
 
 const Login = () => {
   const { isAuthenticated, login } = useAuth()
 
   useEffect(() => {
     document.title = 'Nu Data Lineage'
+    trackEvent('Login', 'View Login Page')
   }, [])
 
   // If already authenticated, redirect away from the login page
   if (isAuthenticated) {
     return <Navigate to='/' replace />
+  }
+
+  const handleLoginClick = () => {
+    login();
+    trackEvent('Login', 'Click Sign In with Okta')
   }
 
   return (
@@ -54,7 +61,7 @@ const Login = () => {
             sx={{ fontSize: '18px', marginBottom: '20px' }}
             variant='contained'
             color='primary'
-            onClick={login}
+            onClick={handleLoginClick}
           >
             Sign in with Okta
           </Button>
