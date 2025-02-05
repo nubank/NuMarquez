@@ -25,9 +25,9 @@ interface IDispatchProps {
 const Toast = ({ error, success, isOpen, dialogToggle }: IProps & IDispatchProps) => {
   useEffect(() => {
     if (isOpen) {
-      trackEvent('Toast', 'Display Toast', dialogToggle.arguments || 'No Message');
+      trackEvent('Toast', 'Display Toast', error || success || 'No Message')
     }
-  }, [isOpen]);
+  }, [isOpen])
 
   const handleClose = (_: React.SyntheticEvent | Event, reason?: SnackbarCloseReason) => {
     if (reason === 'clickaway') {
@@ -35,7 +35,7 @@ const Toast = ({ error, success, isOpen, dialogToggle }: IProps & IDispatchProps
     }
 
     dialogToggle('error')
-    trackEvent('Toast', 'Close Toast', dialogToggle.arguments || 'No Message')
+    trackEvent('Toast', 'Close Toast', error || success || 'No Message')
   }
 
   const action = (
