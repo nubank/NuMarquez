@@ -53,10 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(userInfo),
           })
-<<<<<<< HEAD
           trackEvent('AuthContext', 'Login Successful', userInfo.email)
-=======
->>>>>>> main
         } else {
           setUser(null)
         }
