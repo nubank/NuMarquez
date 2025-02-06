@@ -18,6 +18,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import ParentSize from '@visx/responsive/lib/components/ParentSize'
 import React, { useEffect, useRef, useState } from 'react'
 import TableLevelDrawer from './TableLevelDrawer'
+import { trackEvent } from '../../components/ga4'
 
 interface StateProps {
   lineage: LineageGraph
@@ -54,16 +55,22 @@ const ColumnLevel: React.FC<ColumnLevelProps> = ({
     }
   }, [name, namespace, depth])
 
+  useEffect(() => {
+    trackEvent('TableLevel', 'View Table-Level Lineage')
+  }, [])
+
   if (!lineage) {
     return <div />
   }
 
   const handleScaleZoom = (inOrOut: 'in' | 'out') => {
     graphControls.current?.scaleZoom(inOrOut === 'in' ? zoomInFactor : zoomOutFactor)
+    trackEvent('TableLevel', `Zoom ${inOrOut === 'in' ? 'In' : 'Out'}`)
   }
 
   const handleResetZoom = () => {
     graphControls.current?.fitContent()
+    trackEvent('TableLevel', 'Reset Zoom')
   }
 
   const handleCenterOnNode = () => {
@@ -71,6 +78,7 @@ const ColumnLevel: React.FC<ColumnLevelProps> = ({
       `${nodeType}:${namespace}:${name}`,
       DEFAULT_MAX_SCALE
     )
+    trackEvent('TableLevel', 'Center on Node', `${nodeType}:${namespace}:${name}`)
   }
 
   const setGraphControls = useCallbackRef((zoomControls) => {

@@ -17,6 +17,7 @@ import Box from '@mui/material/Box'
 import ColumnLevelDrawer from './ColumnLevelDrawer'
 import ParentSize from '@visx/responsive/lib/components/ParentSize'
 import React, { useEffect, useRef, useState } from 'react'
+import { trackEvent } from '../../components/ga4'
 
 interface StateProps {
   columnLineage: ColumnLineageGraph
@@ -44,6 +45,10 @@ const ColumnLevel: React.FC<ColumnLevelProps> = ({
   )
 
   const graphControls = useRef<ZoomPanControls>()
+
+  useEffect(() => {
+    trackEvent('ColumnLevel', 'View Column-Level Lineage')
+  }, [])
 
   useEffect(() => {
     if (name && namespace) {
@@ -88,7 +93,10 @@ const ColumnLevel: React.FC<ColumnLevelProps> = ({
         <Drawer
           anchor={'right'}
           open={!!searchParams.get('dataset')}
-          onClose={() => setSearchParams({})}
+          onClose={() => {
+            setSearchParams({})
+            trackEvent('ColumnLevel', 'Close Drawer')
+          }}
           PaperProps={{
             sx: {
               backgroundColor: theme.palette.background.default,

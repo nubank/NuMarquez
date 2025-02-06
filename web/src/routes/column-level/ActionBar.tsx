@@ -17,6 +17,7 @@ import { getColumnLineage } from '../../store/requests/columnlineage'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import MQTooltip from '../../components/core/tooltip/MQTooltip'
 import MqText from '../../components/core/text/MqText'
+import { trackEvent } from '../../components/ga4'
 import React, { useState } from 'react'
 
 interface ActionBarProps {
@@ -47,6 +48,8 @@ export const ActionBar = ({
     searchParams.set('depth', e.target.value)
     setSearchParams(searchParams)
 
+    trackEvent('ActionBar', 'Change Depth', newDepth.toString())
+
     if (namespace && name) {
       await getColumnLineage('DATASET', namespace, name, newDepth, withDownstream)
     }
@@ -61,10 +64,17 @@ export const ActionBar = ({
     searchParams.set('withDownstream', newValue.toString())
     setSearchParams(searchParams)
 
+    trackEvent('ActionBar', 'Change Direction', newValue ? 'Both' : 'Upstream')
+
     if (namespace && name) {
       await getColumnLineage('DATASET', namespace, name, depth, newValue)
     }
     setLoading(false)
+  }
+
+  const handleBackClick = () => {
+    navigate('/')
+    trackEvent('ActionBar', 'Navigate Back to Datasets')
   }
 
   return (
@@ -85,7 +95,7 @@ export const ActionBar = ({
     >
       <Box display={'flex'} alignItems={'center'}>
         <MQTooltip title={'Back to datasets'}>
-          <IconButton size={'small'} sx={{ mr: 2 }} onClick={() => navigate('/')}>
+          <IconButton size={'small'} sx={{ mr: 2 }} onClick={handleBackClick}>
             <ArrowBackIosRounded fontSize={'small'} />
           </IconButton>
         </MQTooltip>
@@ -164,3 +174,4 @@ export const ActionBar = ({
     </Box>
   )
 }
+export default ActionBar

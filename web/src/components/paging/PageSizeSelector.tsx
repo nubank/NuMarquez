@@ -1,5 +1,6 @@
 import { Button, Menu, MenuItem } from '@mui/material'
 import React, { useState } from 'react'
+import { trackEvent } from '../ga4'
 
 type PageSizeSelectorProps = {
   onChange: (pageSize: number) => void
@@ -19,6 +20,7 @@ const PageSizeSelector: React.FC<PageSizeSelectorProps> = ({ onChange, initialPa
   const handleMenuItemClick = (option: number) => {
     setPageSize(option)
     onChange(option)
+    trackEvent('PageSizeSelector', 'Change Page Size', option.toString())
     setAnchorEl(null)
   }
 

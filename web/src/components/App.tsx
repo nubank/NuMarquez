@@ -1,5 +1,3 @@
-// Copyright 2018-2023 contributors to the Marquez project
-// SPDX-License-Identifier: Apache-2.0
 
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { AuthProvider } from '../auth/AuthContext'
@@ -32,6 +30,7 @@ import Toast from './Toast'
 import createRootReducer from '../store/reducers'
 import createSagaMiddleware from 'redux-saga'
 import rootSaga from '../store/sagas'
+import GAInitializer from './GAInitializer'
 
 const sagaMiddleware = createSagaMiddleware({
   onError: (error, _sagaStackIgnored) => {
@@ -69,6 +68,7 @@ const App = (): ReactElement => {
                       <Container maxWidth={'xl'} disableGutters={true}>
                         <Header />
                       </Container>
+                      <GAInitializer />
                       <Routes>
                         <Route path='/login' element={<Login />} />
                         <Route path='/login/callback' element={<LoginCallback />} />

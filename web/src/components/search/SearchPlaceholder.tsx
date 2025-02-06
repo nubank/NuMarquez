@@ -3,6 +3,7 @@
 
 import { Box } from '@mui/material'
 import { theme } from '../../helpers/theme'
+import { trackEvent } from '../ga4'
 import MqText from '../core/text/MqText'
 import React from 'react'
 import Typewriter from './Typewriter'
@@ -15,6 +16,10 @@ interface SearchPlaceholderProps {}
 
 const SearchPlaceholder: React.FC<SearchPlaceholderProps> = () => {
   const i18next = importI18next()
+  React.useEffect(() => {
+    trackEvent('SearchPlaceholder', 'View Search Placeholder')
+  }, [])
+  
   return (
     <Box
       sx={{

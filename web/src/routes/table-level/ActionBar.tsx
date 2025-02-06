@@ -16,6 +16,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import MQTooltip from '../../components/core/tooltip/MQTooltip'
 import MqText from '../../components/core/text/MqText'
 import React, { useEffect, useState } from 'react'
+import { trackEvent } from '../../components/ga4'
 
 interface ActionBarProps {
   nodeType: 'DATASET' | 'JOB'
@@ -44,6 +45,18 @@ export const ActionBar = ({
 
   const [loading, setLoading] = useState(false)
 
+  const handleBackClick = () => {
+    navigate(nodeType === 'JOB' ? '/jobs' : '/')
+    trackEvent('ActionBar', 'Click Back Button', nodeType)
+  }
+
+  const handleRefreshClick = () => {
+    if (namespace && name) {
+      fetchLineage(nodeType, namespace, name, depth, true)
+      trackEvent('ActionBar', 'Refresh Lineage', nodeType)
+    }
+  }
+
   const handleDepthChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setLoading(true)
 
@@ -56,6 +69,21 @@ export const ActionBar = ({
       await getLineage(nodeType, namespace, name, newDepth)
     }
     setLoading(false)
+    trackEvent('ActionBar', 'Change Depth', newDepth.toString())
+  }
+
+  const handleAllDependenciesToggle = (checked: boolean) => {
+    setIsFull(checked)
+    searchParams.set('isFull', checked.toString())
+    setSearchParams(searchParams)
+    trackEvent('ActionBar', 'Toggle All Dependencies', checked.toString())
+  }
+
+  const handleHideColumnNamesToggle = (checked: boolean) => {
+    setIsCompact(checked)
+    searchParams.set('isCompact', checked.toString())
+    setSearchParams(searchParams)
+    trackEvent('ActionBar', 'Toggle Hide Column Names', checked.toString())
   }
 
   useEffect(() => {
@@ -84,11 +112,7 @@ export const ActionBar = ({
     >
       <Box display={'flex'} alignItems={'center'}>
         <MQTooltip title={`Back to ${nodeType === 'JOB' ? 'jobs' : 'datasets'}`}>
-          <IconButton
-            size={'small'}
-            sx={{ mr: 2 }}
-            onClick={() => navigate(nodeType === 'JOB' ? '/jobs' : '/')}
-          >
+        <IconButton size={'small'} sx={{ mr: 2 }} onClick={handleBackClick}>
             <ArrowBackIosRounded fontSize={'small'} />
           </IconButton>
         </MQTooltip>
@@ -113,16 +137,7 @@ export const ActionBar = ({
       </Box>
       <Box display={'flex'} alignItems={'center'}>
         <MQTooltip title={'Refresh'}>
-          <IconButton
-            sx={{ mr: 2 }}
-            color={'primary'}
-            size={'small'}
-            onClick={() => {
-              if (namespace && name) {
-                fetchLineage(nodeType, namespace, name, depth, true)
-              }
-            }}
-          >
+        <IconButton sx={{ mr: 2 }} color={'primary'} size={'small'} onClick={handleRefreshClick}>
             <Refresh fontSize={'small'} />
           </IconButton>
         </MQTooltip>
@@ -153,11 +168,7 @@ export const ActionBar = ({
                   size={'small'}
                   value={isFull}
                   defaultChecked={searchParams.get('isFull') === 'true'}
-                  onChange={(_, checked) => {
-                    setIsFull(checked)
-                    searchParams.set('isFull', checked.toString())
-                    setSearchParams(searchParams)
-                  }}
+                  onChange={(_, checked) => handleAllDependenciesToggle(checked)}
                 />
               }
               label={<MqText font={'mono'}>All dependencies</MqText>}
@@ -170,11 +181,7 @@ export const ActionBar = ({
                   size={'small'}
                   checked={isCompact}
                   defaultChecked={searchParams.get('isCompact') === 'true'}
-                  onChange={(_, checked) => {
-                    setIsCompact(checked)
-                    searchParams.set('isCompact', checked.toString())
-                    setSearchParams(searchParams)
-                  }}
+                  onChange={(_, checked) => handleHideColumnNamesToggle(checked)}
                 />
               }
               label={<MqText font={'mono'}>Hide column names</MqText>}

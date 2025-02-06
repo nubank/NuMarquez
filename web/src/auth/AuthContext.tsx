@@ -1,5 +1,6 @@
 import { AuthState, OktaAuth } from '@okta/okta-auth-js'
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { trackEvent } from '../components/ga4'
 
 export const oktaAuth = new OktaAuth({
   issuer: 'https://nubank.okta.com/oauth2/default',
@@ -41,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Define a synchronous callback for authStateManager
     const handleAuthState = (authState: AuthState): void => {
       // Wrap detailed async logic in an immediately-invoked async function
-      ;(async () => {
+      (async () => {
         const loggedIn = !!authState?.isAuthenticated
         setIsAuthenticated(loggedIn)
         if (loggedIn) {
@@ -51,7 +52,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(userInfo),
-          });
+          })
+          trackEvent('AuthContext', 'Login Successful', userInfo.email)
         } else {
           setUser(null)
         }

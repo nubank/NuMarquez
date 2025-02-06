@@ -1,8 +1,4 @@
-// Copyright 2018-2023 contributors to the Marquez project
-// SPDX-License-Identifier: Apache-2.0
-
 import React, { ReactElement } from 'react'
-
 import { Link as RouterLink } from 'react-router-dom'
 import { THEME_EXTRA, theme } from '../../../helpers/theme'
 import { lighten } from '@mui/material'
@@ -16,11 +12,12 @@ interface OwnProps {
   active: boolean
   to: string
   target?: string
+  onClick?: () => void // Add onClick property
 }
 
 type IconButtonProps = OwnProps
 
-const MqIconButton: React.FC<IconButtonProps> = ({ id, title, active, children, to, target }) => {
+const MqIconButton: React.FC<IconButtonProps> = ({ id, title, active, children, to, target, onClick }) => {
   return (
     <Box
       sx={{
@@ -37,6 +34,7 @@ const MqIconButton: React.FC<IconButtonProps> = ({ id, title, active, children, 
         to={to}
         target={target}
         disableRipple={true}
+        onClick={onClick} // Pass onClick to ButtonBase
         sx={Object.assign(
           {
             width: theme.spacing(6),

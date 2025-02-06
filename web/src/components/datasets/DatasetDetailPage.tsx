@@ -1,6 +1,3 @@
-// Copyright 2018-2023 contributors to the Marquez project
-// SPDX-License-Identifier: Apache-2.0
-
 import * as Redux from 'redux'
 import { Box, Divider, FormControlLabel, Grid, Switch, Tab, Tabs, createTheme } from '@mui/material'
 import { CalendarIcon } from '@mui/x-date-pickers'
@@ -39,6 +36,7 @@ import MqText from '../core/text/MqText'
 import React, { ChangeEvent, FunctionComponent, useEffect, useState } from 'react'
 import RuleIcon from '@mui/icons-material/Rule'
 import StorageIcon from '@mui/icons-material/Storage'
+import { trackEvent } from '../ga4'
 
 interface StateProps {
   lineageDataset: LineageDataset
@@ -100,6 +98,7 @@ const DatasetDetailPage: FunctionComponent<IProps> = (props) => {
   // might need to map first version to its own state
   useEffect(() => {
     fetchDataset(lineageDataset.namespace, lineageDataset.name)
+    trackEvent('DatasetDetailPage', 'View Dataset', lineageDataset.name)
   }, [lineageDataset.name])
 
   // if the dataset is deleted then redirect to datasets end point
@@ -111,6 +110,12 @@ const DatasetDetailPage: FunctionComponent<IProps> = (props) => {
 
   const handleChange = (_: ChangeEvent, newValue: number) => {
     setTabIndex(newValue)
+    trackEvent('DatasetDetailPage', 'Tab Switch', `Tab ${newValue}`)
+  }
+
+  const handleToggleShowTags = () => {
+    setShowTags(!showTags)
+    trackEvent('DatasetDetailPage', 'Toggle Show Tags', showTags ? 'Off' : 'On')
   }
 
   if (!dataset || isDatasetLoading) {
@@ -273,7 +278,7 @@ const DatasetDetailPage: FunctionComponent<IProps> = (props) => {
                 <Switch
                   size={'small'}
                   checked={showTags}
-                  onChange={() => setShowTags(!showTags)}
+                  onChange={handleToggleShowTags}
                   inputProps={{ 'aria-label': 'toggle show tags' }}
                   disabled={isDatasetLoading}
                 />

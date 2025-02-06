@@ -6,9 +6,10 @@ import { LineageGraph } from '../../types/api'
 import { bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
+import { trackEvent } from '../../components/ga4'
 import DatasetDetailPage from '../../components/datasets/DatasetDetailPage'
 import JobDetailPage from '../../components/jobs/JobDetailPage'
-import React from 'react'
+import React, { useEffect } from 'react'
 
 const WIDTH = 800
 
@@ -23,13 +24,25 @@ const TableLevelDrawer = ({ lineageGraph }: StateProps & DispatchProps) => {
     (node) => node.id === searchParams.get('tableLevelNode') || ''
   )
 
-  let dataset = null
-  let job = null
+  let dataset: LineageDataset | null = null
+  let job: LineageJob | null = null
   if (node?.type === 'DATASET') {
     dataset = node.data as LineageDataset
   } else if (node?.type === 'JOB') {
     job = node.data as LineageJob
   }
+
+  useEffect(() => {
+    trackEvent('TableLevelDrawer', 'View Table-Level Drawer')
+  }, [])
+
+  useEffect(() => {
+    if (dataset) {
+      trackEvent('TableLevelDrawer', 'View Dataset Detail', dataset.name)
+    } else if (job) {
+      trackEvent('TableLevelDrawer', 'View Job Detail', job.name)
+    }
+  }, [dataset, job])
 
   return (
     <Box width={`${WIDTH}px`}>

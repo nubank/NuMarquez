@@ -12,6 +12,7 @@ import { runStateColor } from '../../helpers/nodes'
 import { theme } from '../../helpers/theme'
 import { truncateText, truncateTextFront } from '../../helpers/text'
 import { useNavigate, useParams } from 'react-router-dom'
+import { trackEvent } from '../../components/ga4'
 import Box from '@mui/system/Box'
 import MQTooltip from '../../components/core/tooltip/MQTooltip'
 import MqStatus from '../../components/core/status/MqStatus'
@@ -38,6 +39,7 @@ const TableLineageJobNode = ({ node }: TableLineageJobNodeProps & StateProps) =>
         node.data.job.name
       )}?tableLevelNode=${encodeURIComponent(node.id)}`
     )
+    trackEvent('TableLineageJobNode', 'Click Job Node', node.data.job.name)
   }
 
   const addToToolTip = (job: LineageJob) => {

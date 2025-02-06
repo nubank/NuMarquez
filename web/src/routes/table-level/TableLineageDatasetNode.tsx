@@ -16,6 +16,7 @@ import { fetchDataset, resetDataset } from '../../store/actionCreators'
 import { formatUpdatedAt } from '../../helpers'
 import { truncateText, truncateTextFront } from '../../helpers/text'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { trackEvent } from '../../components/ga4'
 import Box from '@mui/system/Box'
 import IconButton from '@mui/material/IconButton'
 import MQTooltip from '../../components/core/tooltip/MQTooltip'
@@ -60,6 +61,25 @@ const TableLineageDatasetNode = ({
         node.data.dataset.name
       )}?tableLevelNode=${encodeURIComponent(node.id)}`
     )
+    trackEvent('TableLineageDatasetNode', 'Click Dataset Node', node.data.dataset.name)
+  }
+
+  const handleCollapseExpand = (event: React.MouseEvent) => {
+    event.stopPropagation()
+    const collapsedNodes = searchParams.get('collapsedNodes')
+    if (collapsedNodes) {
+      const collapsedNodesArray = collapsedNodes.split(',')
+      if (collapsedNodesArray.includes(node.id)) {
+        collapsedNodesArray.splice(collapsedNodesArray.indexOf(node.id), 1)
+      } else {
+        collapsedNodesArray.push(node.id)
+      }
+      searchParams.set('collapsedNodes', collapsedNodesArray.toString())
+    } else {
+      searchParams.set('collapsedNodes', node.id)
+    }
+    setSearchParams(searchParams)
+    trackEvent('TableLineageDatasetNode', isCollapsed ? 'Expand Node' : 'Collapse Node', node.id)
   }
 
   const addToToolTip = (lineageDataset: LineageDataset, dataset: Dataset) => {
@@ -173,24 +193,9 @@ const TableLineageDatasetNode = ({
       />
       <foreignObject width={16} height={24} x={node.width - 18} y={0}>
         <MQTooltip title={isCollapsed ? 'Expand' : 'Collapse'} placement={'top'}>
-          <IconButton
+        <IconButton
             sx={{ width: 10, height: 10 }}
-            onClick={(event) => {
-              event.stopPropagation()
-              const collapsedNodes = searchParams.get('collapsedNodes')
-              if (collapsedNodes) {
-                const collapsedNodesArray = collapsedNodes.split(',')
-                if (collapsedNodesArray.includes(node.id)) {
-                  collapsedNodesArray.splice(collapsedNodesArray.indexOf(node.id), 1)
-                } else {
-                  collapsedNodesArray.push(node.id)
-                }
-                searchParams.set('collapsedNodes', collapsedNodesArray.toString())
-              } else {
-                searchParams.set('collapsedNodes', node.id)
-              }
-              setSearchParams(searchParams)
-            }}
+            onClick={handleCollapseExpand}
           >
             <ChevronLeft
               sx={{

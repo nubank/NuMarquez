@@ -49,6 +49,7 @@ import MqStatus from '../core/status/MqStatus'
 import MqText from '../core/text/MqText'
 import RunInfo from './RunInfo'
 import Runs from './Runs'
+import { trackEvent } from '../ga4'
 
 interface DispatchProps {
   fetchLatestRuns: typeof fetchLatestRuns
@@ -90,6 +91,7 @@ const JobDetailPage: FunctionComponent<IProps> = (props) => {
 
   const handleChange = (_: ChangeEvent, newValue: number) => {
     setTabIndex(newValue)
+    trackEvent('JobDetailPage', 'Tab Switch', `Tab ${newValue}`)
   }
 
   const i18next = require('i18next')
@@ -97,6 +99,7 @@ const JobDetailPage: FunctionComponent<IProps> = (props) => {
   useEffect(() => {
     fetchJob(lineageJob.namespace, lineageJob.name)
     fetchLatestRuns(lineageJob.name, lineageJob.namespace)
+    trackEvent('JobDetailPage', 'View Job Details', lineageJob.name)
   }, [lineageJob.name])
 
   useEffect(() => {
@@ -183,6 +186,7 @@ const JobDetailPage: FunctionComponent<IProps> = (props) => {
                 target={'_blank'}
                 href={job.location}
                 disabled={!job.location}
+                onClick={() => trackEvent('JobDetailPage', 'Click Job Location', job.location)}
               >
                 {i18next.t('jobs.location')}
               </Button>
