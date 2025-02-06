@@ -126,10 +126,10 @@ const Datasets: React.FC<DatasetsProps> = ({
 
   const handleRefresh = () => {
     if (selectedNamespace) {
-      fetchDatasets(selectedNamespace, pageSize, state.page * pageSize);
-      trackEvent('Datasets', 'Refresh Datasets');
+      fetchDatasets(selectedNamespace, pageSize, state.page * pageSize)
+      trackEvent('Datasets', 'Refresh Datasets')
     }
-  };
+  }
 
   const i18next = require('i18next')
   return (

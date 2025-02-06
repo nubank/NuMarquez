@@ -93,7 +93,7 @@ const BaseSearch: React.FC<BaseSearchProps & StateProps & DispatchProps> = ({
   const onSelectSortFilter = (label: string) => {
     setSort(label)
     fetchSearch(search, filter.toUpperCase(), label.toUpperCase())
-    trackEvent('BaseSearch', 'Select Sort Option', label);
+    trackEvent('BaseSearch', 'Select Sort Option', label)
   }
 
   const searchApi = (q: string, filter = 'ALL', sort = 'NAME') => {

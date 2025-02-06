@@ -21,8 +21,8 @@ const HEIGHT = 52
 
 const MiniGraph: React.FC<Props> = ({ intervalMetrics, isLoading, color, label }) => {
   useEffect(() => {
-    trackEvent('MiniGraph', 'View Mini Graph', label);
-  }, [label]);
+    trackEvent('MiniGraph', 'View Mini Graph', label)
+  }, [label])
   if (!intervalMetrics || isLoading) {
     return <Skeleton height={HEIGHT + 1} width={'100%'} />
   }

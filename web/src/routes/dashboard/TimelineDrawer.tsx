@@ -18,8 +18,8 @@ const WIDTH = 400
 
 const TimelineDrawer = () => {
   useEffect(() => {
-    trackEvent('TimelineDrawer', 'View Timeline Drawer');
-  }, []);
+    trackEvent('TimelineDrawer', 'View Timeline Drawer')
+  }, [])
   return (
     <Box width={`${WIDTH}px`}>
       <Box px={2}>

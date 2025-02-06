@@ -34,9 +34,9 @@ const AlertDialog: FunctionComponent<IProps> = (props) => {
   }
 
   const handleContinue = () => {
-    props.ignoreWarning();
-    trackEvent('Dialog', 'Click Continue', props.title ?? 'No Title');
-  };
+    props.ignoreWarning()
+    trackEvent('Dialog', 'Click Continue', props.title ?? 'No Title')
+  }
 
   const theme = createTheme(useTheme())
 

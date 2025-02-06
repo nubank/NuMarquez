@@ -71,7 +71,6 @@ API_PORT=5000
 API_ADMIN_PORT=5001
 WEB_PORT=3000
 DB_PORT=5432
-DB_PORT=5432
 SEARCH_PORT=9200
 NO_WEB="false"
 NO_SEARCH="false"
@@ -95,9 +94,7 @@ while [ $# -gt 0 ]; do
        WEB_PORT="${1}"
        ;;
     -d|'--db-port')
-    -d|'--db-port')
        shift
-       DB_PORT="${1}"
        DB_PORT="${1}"
        ;;
     -e|'--search-port')
@@ -174,6 +171,5 @@ if [[ "${NO_SEARCH}" = "true" ]]; then
 fi
 
 # Run docker compose cmd with overrides
-DOCKER_SCAN_SUGGEST="false" API_PORT=${API_PORT} API_ADMIN_PORT=${API_ADMIN_PORT} WEB_PORT=${WEB_PORT} POSTGRES_PORT=${DB_PORT} SEARCH_ENABLED=${SEARCH_ENABLED} SEARCH_PORT=${SEARCH_PORT} TAG=${TAG} \
 DOCKER_SCAN_SUGGEST="false" API_PORT=${API_PORT} API_ADMIN_PORT=${API_ADMIN_PORT} WEB_PORT=${WEB_PORT} POSTGRES_PORT=${DB_PORT} SEARCH_ENABLED=${SEARCH_ENABLED} SEARCH_PORT=${SEARCH_PORT} TAG=${TAG} \
   docker --log-level ERROR compose $compose_files up $compose_args

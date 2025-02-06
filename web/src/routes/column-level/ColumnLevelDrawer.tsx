@@ -53,22 +53,22 @@ const ColumnLevelDrawer = ({
   }, [])
 
   useEffect(() => {
-    trackEvent('ColumnLevelDrawer', 'View Column-Level Drawer');
-  }, []);
+    trackEvent('ColumnLevelDrawer', 'View Column-Level Drawer')
+  }, [])
 
   useEffect(() => {
-    const dataset = searchParams.get('dataset');
-    const namespace = searchParams.get('namespace');
+    const dataset = searchParams.get('dataset')
+    const namespace = searchParams.get('namespace')
     if (dataset && namespace) {
-      fetchDataset(namespace, dataset);
-      trackEvent('ColumnLevelDrawer', 'Fetch Dataset Details', dataset);
+      fetchDataset(namespace, dataset)
+      trackEvent('ColumnLevelDrawer', 'Fetch Dataset Details', dataset)
     }
-  }, [searchParams]);
+  }, [searchParams])
 
   const handleClose = () => {
-    setSearchParams({});
-    trackEvent('ColumnLevelDrawer', 'Close Drawer');
-  };
+    setSearchParams({})
+    trackEvent('ColumnLevelDrawer', 'Close Drawer')
+  }
 
   if (!columnLineage) {
     return null

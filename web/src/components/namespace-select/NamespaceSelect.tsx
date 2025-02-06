@@ -13,7 +13,7 @@ import { selectNamespace } from '../../store/actionCreators'
 import { theme } from '../../helpers/theme'
 import MqText from '../core/text/MqText'
 import React from 'react'
-import { trackEvent } from '../ga4';
+import { trackEvent } from '../ga4'
 
 interface OwnProps {}
 
@@ -77,7 +77,7 @@ const NamespaceSelect: React.FC<NamespaceSelectProps> = ({
           value={selectedNamespace}
           onChange={(event) => {
             selectNamespace(event.target.value as string)
-            trackEvent('NamespaceSelect', 'Namespace Selected', event.target.value as string);
+            trackEvent('NamespaceSelect', 'Namespace Selected', event.target.value as string)
           }}
           label='Namespace'
           input={<MqInputBase />}

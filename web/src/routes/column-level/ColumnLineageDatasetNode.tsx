@@ -18,17 +18,17 @@ export const ColumnLineageDatasetNode = ({ node }: ColumnLineageDatasetNodeProps
   const shine = name === node.data.dataset && namespace === node.data.namespace
 
   const handleMouseEnter = () => {
-    trackEvent('ColumnLineageDatasetNode', 'Hover Dataset Node', node.data.dataset);
-  };
+    trackEvent('ColumnLineageDatasetNode', 'Hover Dataset Node', node.data.dataset)
+  }
 
   const handleClick = () => {
     setSearchParams({
       ...searchParams,
       dataset: node.data.dataset,
       namespace: node.data.namespace,
-    });
-    trackEvent('ColumnLineageDatasetNode', 'Click Dataset Node', node.data.dataset);
-  };
+    })
+    trackEvent('ColumnLineageDatasetNode', 'Click Dataset Node', node.data.dataset)
+  }
 
   return (
     <>

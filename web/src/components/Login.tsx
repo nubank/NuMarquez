@@ -21,7 +21,7 @@ const Login = () => {
   }
 
   const handleLoginClick = () => {
-    login();
+    login()
     trackEvent('Login', 'Click Sign In with Okta')
   }
 

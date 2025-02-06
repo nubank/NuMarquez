@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Define a synchronous callback for authStateManager
     const handleAuthState = (authState: AuthState): void => {
       // Wrap detailed async logic in an immediately-invoked async function
-      ;(async () => {
+      (async () => {
         const loggedIn = !!authState?.isAuthenticated
         setIsAuthenticated(loggedIn)
         if (loggedIn) {
@@ -52,8 +52,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(userInfo),
-          });
-          trackEvent('AuthContext', 'Login Successful', userInfo.email);
+          })
+<<<<<<< HEAD
+          trackEvent('AuthContext', 'Login Successful', userInfo.email)
+=======
+>>>>>>> main
         } else {
           setUser(null)
         }

@@ -15,7 +15,6 @@ import MqText from '../core/text/MqText'
 import React from 'react'
 import moment from 'moment'
 
-
 interface OwnProps {
   searchResult: SearchResult
   search: string

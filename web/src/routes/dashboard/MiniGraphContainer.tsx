@@ -4,7 +4,7 @@ import { formatNumber } from '../../helpers/numbers'
 import { trackEvent } from '../../components/ga4'
 import MiniGraph from './MiniGraph'
 import MqText from '../../components/core/text/MqText'
-import React, { useEffect } from 'react';
+import React, { useEffect } from 'react'
 
 interface Props {
   metrics: IntervalMetric[]
@@ -15,8 +15,8 @@ interface Props {
 
 export const MiniGraphContainer = ({ metrics, label, color, isLoading }: Props) => {
   useEffect(() => {
-    trackEvent('MiniGraphContainer', 'View Mini Graph Container', label);
-  }, [label]);
+    trackEvent('MiniGraphContainer', 'View Mini Graph Container', label)
+  }, [label])
   return (
     <>
       <Box display={'flex'} justifyContent={'space-between'} alignItems={'center'}>

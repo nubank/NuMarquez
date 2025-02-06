@@ -1,21 +1,21 @@
-import React, { ReactElement } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
-import { THEME_EXTRA, theme } from '../../../helpers/theme';
-import { lighten } from '@mui/material';
-import Box from '@mui/material/Box';
-import ButtonBase from '@mui/material/ButtonBase';
+import React, { ReactElement } from 'react'
+import { Link as RouterLink } from 'react-router-dom'
+import { THEME_EXTRA, theme } from '../../../helpers/theme'
+import { lighten } from '@mui/material'
+import Box from '@mui/material/Box'
+import ButtonBase from '@mui/material/ButtonBase'
 
 interface OwnProps {
-  id: string;
-  title: string;
-  children: ReactElement;
-  active: boolean;
-  to: string;
-  target?: string;
-  onClick?: () => void; // Add onClick property
+  id: string
+  title: string
+  children: ReactElement
+  active: boolean
+  to: string
+  target?: string
+  onClick?: () => void // Add onClick property
 }
 
-type IconButtonProps = OwnProps;
+type IconButtonProps = OwnProps
 
 const MqIconButton: React.FC<IconButtonProps> = ({ id, title, active, children, to, target, onClick }) => {
   return (
@@ -66,7 +66,7 @@ const MqIconButton: React.FC<IconButtonProps> = ({ id, title, active, children, 
         {title}
       </Box>
     </Box>
-  );
-};
+  )
+}
 
-export default MqIconButton;
+export default MqIconButton

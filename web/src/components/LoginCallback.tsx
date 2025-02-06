@@ -20,8 +20,8 @@ const LoginCallback = () => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(userInfo),
-          });
-          trackEvent('LoginCallback', 'Login Successful', userInfo.email);
+          })
+          trackEvent('LoginCallback', 'Login Successful', userInfo.email)
           navigate('/', { replace: true })
         } else {
           navigate('/login')

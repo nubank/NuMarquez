@@ -88,7 +88,7 @@ const Search: React.FC<SearchProps> = ({ isLoading, onSearch }) => {
   }
 
   const handleFocus = () => {
-    setOpen(true);
+    setOpen(true)
     trackEvent('Search', 'Focus Search Bar')
   }
 

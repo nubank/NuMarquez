@@ -10,7 +10,7 @@ import { theme } from '../../helpers/theme'
 import Box from '@mui/system/Box'
 import MqText from '../../components/core/text/MqText'
 import ParentSize from '@visx/responsive/lib/components/ParentSize'
-import React, { useEffect } from 'react';
+import React, { useEffect } from 'react'
 import { trackEvent } from '../../components/ga4'
 
 interface Props {
@@ -48,8 +48,8 @@ const StackedLineageEvents = ({ lineageMetrics }: Props) => {
 
   const tallest = Math.max(...[...failData, ...startData, ...completeData, ...abortData])
   useEffect(() => {
-    trackEvent('StackedLineageEvents', 'View Stacked Lineage Events');
-  }, []);
+    trackEvent('StackedLineageEvents', 'View Stacked Lineage Events')
+  }, [])
 
   return (
     <Box

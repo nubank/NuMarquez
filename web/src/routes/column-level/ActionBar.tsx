@@ -73,9 +73,9 @@ export const ActionBar = ({
   }
 
   const handleBackClick = () => {
-    navigate('/');
+    navigate('/')
     trackEvent('ActionBar', 'Navigate Back to Datasets')
-  };
+  }
 
   return (
     <Box
@@ -174,3 +174,4 @@ export const ActionBar = ({
     </Box>
   )
 }
+export default ActionBar

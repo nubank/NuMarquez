@@ -27,18 +27,18 @@ const ColumnLineageColumnNode = ({ node }: ColumnLineageColumnNodeProps & StateP
   const [searchParams, setSearchParams] = useSearchParams()
   const [shine, setShine] = React.useState(false)
   const handleMouseEnter = () => {
-    setShine(true);
+    setShine(true)
     setSearchParams({
       ...searchParams,
       column: encodeQueryString(node.data.namespace, node.data.dataset, node.data.column),
       columnName: node.data.column,
-    });
-    trackEvent('ColumnLineageColumnNode', 'Hover Column Node', node.data.column);
-  };
+    })
+    trackEvent('ColumnLineageColumnNode', 'Hover Column Node', node.data.column)
+  }
 
   const handleMouseLeave = () => {
-    setShine(false);
-  };
+    setShine(false)
+  }
 
   const handleClick = () => {
     setSearchParams({
@@ -47,9 +47,9 @@ const ColumnLineageColumnNode = ({ node }: ColumnLineageColumnNodeProps & StateP
       namespace: node.data.namespace,
       column: encodeQueryString(node.data.namespace, node.data.dataset, node.data.column),
       columnName: node.data.column,
-    });
-    trackEvent('ColumnLineageColumnNode', 'Click Column Node', node.data.column);
-  };
+    })
+    trackEvent('ColumnLineageColumnNode', 'Click Column Node', node.data.column)
+  }
 
   return (
     <>

@@ -56,8 +56,8 @@ const ColumnLevel: React.FC<ColumnLevelProps> = ({
   }, [name, namespace, depth])
 
   useEffect(() => {
-    trackEvent('TableLevel', 'View Table-Level Lineage');
-  }, []);
+    trackEvent('TableLevel', 'View Table-Level Lineage')
+  }, [])
 
   if (!lineage) {
     return <div />

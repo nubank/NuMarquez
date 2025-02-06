@@ -110,7 +110,7 @@ const OpenSearch: React.FC<StateProps & DispatchProps & Props> = ({
       fetchOpenSearchJobs(search)
       trackEvent('OpenSearch', 'Perform Search', search)
     }
-  }, [search]);
+  }, [search])
 
   useEffect(() => {
     if (openSearchJobs.data.hits.length > 0) {

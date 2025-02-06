@@ -64,7 +64,7 @@ const INTERVAL_TO_MS_MAP: Record<RefreshInterval, number> = {
   Never: 0,
 }
 
-const states: { label: RunState; color: string; bgColor: string }[] = [
+const states: { label: RunState color: string bgColor: string }[] = [
   { label: 'RUNNING', color: theme.palette.info.main, bgColor: 'secondary' },
   { label: 'COMPLETED', color: theme.palette.primary.main, bgColor: 'primary' },
   { label: 'FAILED', color: theme.palette.error.main, bgColor: 'error' },
@@ -175,7 +175,7 @@ const Dashboard: React.FC = ({
   const handleRefreshIntervalChange = (option: RefreshInterval) => {
     setIntervalKey(option)
     trackEvent('Dashboard', 'Change Refresh Interval', option)
-  };
+  }
 
   const handleSeeMoreClick = () => {
     setJobsDrawerOpen(true)

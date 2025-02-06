@@ -30,8 +30,8 @@ const DatasetInfo: FunctionComponent<DatasetInfoProps> = (props) => {
   const i18next = require('i18next')
 
   useEffect(() => {
-    trackEvent('DatasetInfo', 'View Dataset Information', dataset.name);
-  }, [dataset.name]);
+    trackEvent('DatasetInfo', 'View Dataset Information', dataset.name)
+  }, [dataset.name])
 
   return (
     <Box>
