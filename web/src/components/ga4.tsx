@@ -1,7 +1,7 @@
 import ReactGA from 'react-ga4';
 
 const initializeGA = () => {
-    ReactGA.initialize('G-497622C5B5');
+    ReactGA.initialize('G-QF2RHX3HRJ');
   };
   
   const trackPageView = () => {
