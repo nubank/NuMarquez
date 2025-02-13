@@ -145,7 +145,7 @@ class appMetrics {
         const keys = await redisReadClient.keys('unique_user:*');
         let activeUsers = 0;
         const currentTime = Date.now();
-        const seventyTwoHours = 1 * 60 * 60 * 1000;
+        const seventyTwoHours = 72 * 60 * 60 * 1000;
 
         if (keys && keys.length) {
           // Get values for all keys
