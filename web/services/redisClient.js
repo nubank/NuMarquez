@@ -19,13 +19,13 @@ const createRedisClient = (host, port, role) => {
 
 // Create Redis write and read clients
 const redisWriteClient = createRedisClient(
-  process.env.REDIS_WRITE_HOST || 'staging-global-1-mar.n1xtw1.ng.0001.usw2.cache.amazonaws.com',
+  process.env.REDIS_WRITE_HOST || 'prod-global-1-marque-ro.tcq6zg.ng.0001.use1.cache.amazonaws.com',
   process.env.REDIS_PORT || 6379,
   'write'
 );
 
 const redisReadClient = createRedisClient(
-  process.env.REDIS_READ_HOST || 'staging-global-1-mar-ro.n1xtw1.ng.0001.usw2.cache.amazonaws.com',
+  process.env.REDIS_READ_HOST || 'prod-global-1-marque-ro.tcq6zg.ng.0001.use1.cache.amazonaws.com',
   process.env.REDIS_PORT || 6379,
   'read'
 );
