@@ -4,7 +4,7 @@ import { trackEvent } from '../components/ga4'
 
 export const oktaAuth = new OktaAuth({
   issuer: 'https://nubank.okta.com/oauth2/default',
-  clientId: '0oa20d6n6jb6nG5Mn0h8',
+  clientId: '0oa20ehmjv97g8jZP0h8',
   redirectUri: window.location.origin + '/login/callback',
   pkce: true,
   scopes: ['openid', 'profile', 'email'],
