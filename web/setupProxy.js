@@ -84,7 +84,6 @@ app.listen(port, () => {
 app.use(express.json());
 
 const { buildLogData } = require('./services/logFormatter');
-const { userInfo, userInfo, userInfo } = require('os')
 
 // Endpoint to log user info and increment counters
 app.post('/api/loguserinfo', (req, res) => {
