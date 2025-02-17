@@ -1,8 +1,11 @@
-const client = require('prom-client');
-const crypto = require('crypto');
+const client = require('prom-client')
+const crypto = require('crypto')
+
+// Import Kafka producer functions from your kafkaProducer.js file
+const { sendLogToKafka } = require('./kafkaProducer')
 
 // Import Redis write client from your redisClient.js file
-const { redisWriteClient, redisReadClient } = require('./redisClient');
+const { redisWriteClient, redisReadClient } = require('./redisClient')
 
 // Centralize the excluded emails list
 const excludedEmails = new Set([
@@ -100,6 +103,14 @@ class appMetrics {
         // Set the key with expiration (7 days)
         await redisWriteClient.set(key, currentTime, { EX: 7 * 24 * 60 * 60 });
         this.uniqueUserLoginCounter.inc();
+
+        const logData = {
+          accessLog: {
+            email: encodedEmail,
+            dateTime: new Date().toISOString(), 
+          },
+        };
+        sendLogToKafka(logData);
       }
     } catch (err) {
       console.error('Error in incrementUniqueLogins:', err);

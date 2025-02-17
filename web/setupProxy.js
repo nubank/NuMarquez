@@ -3,6 +3,7 @@ const express = require('express')
 const { createProxyMiddleware } = require('http-proxy-middleware')
 const path = require('path')
 const appMetrics = require('./services/appMetrics');
+const { sendLogToKafka } = require('./services/kafkaProducer');
 
 const app = express();
 const router = express.Router();
@@ -20,6 +21,17 @@ app.get('/metrics', async (req, res) => {
     res.status(500).end(ex);
   }
 });
+
+const { connectProducer } = require('./services/kafkaProducer');
+
+(async () => {
+  try {
+    await connectProducer();
+  } catch (error) {
+    console.error('Error connecting Kafka producer:', error);
+    process.exit(1);
+  }
+})();
 
 const environmentVariable = (variableName) => {
   const value = process.env[variableName]
@@ -108,6 +120,7 @@ app.post('/api/loguserinfo', (req, res) => {
     },
   };
   console.log(JSON.stringify(logData));
+  sendLogToKafka(logData);
   res.sendStatus(200);
 });
 
