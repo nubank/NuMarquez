@@ -84,33 +84,49 @@ app.listen(port, () => {
 app.use(express.json());
 
 const { buildLogData } = require('./services/logFormatter');
+const { userInfo, userInfo, userInfo } = require('os')
 
 // Endpoint to log user info and increment counters
 app.post('/api/loguserinfo', (req, res) => {
   const { email = '' } = req.body;
 
+  // Guard against invalid email values
   if (typeof email !== 'string') {
     return res.status(400).json({ error: 'Invalid email format' });
   }
 
-  // Build the enriched log data using the helper
+  // Define a minimal userInfo object with email
+  const userInfo = {
+    email,
+    name: userInfo.name,  
+    locale: userInfo.locale,  
+    zoneinfo: userInfo.zoneinfo,
+    email_verified: true
+  };
+
+  // Build enriched log data using the helper
   const kafkaData = buildLogData(userInfo);
+
+  // Encode the email for your own logs
   const encodedEmail = Buffer.from(email).toString('base64');
 
-  // Increment total logins counter
-  metrics.incrementTotalLogins(); 
-
-  // Check if the user is logging in for the first time in the last 8 hours
+  // Update metrics
+  metrics.incrementTotalLogins();
   metrics.incrementUniqueLogins(email);
 
+  // Console log for local debugging
   const logData = {
     accessLog: {
       email: encodedEmail,
-      dateTime: getFormattedDateTime(),
-    },
+      dateTime: getFormattedDateTime()
+    }
   };
   console.log(JSON.stringify(logData));
+
+  // Send meta info to Kafka
   sendLogToKafka(kafkaData);
+
+  // Response
   res.sendStatus(200);
 });
 
