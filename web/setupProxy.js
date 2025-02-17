@@ -2,8 +2,8 @@
 const express = require('express')
 const { createProxyMiddleware } = require('http-proxy-middleware')
 const path = require('path')
-const appMetrics = require('./services/appMetrics');
-const { sendLogToKafka } = require('./services/kafkaProducer');
+const appMetrics = require('./services/appMetrics')
+const { sendLogToKafka } = require('./services/kafkaProducer')
 
 const app = express();
 const router = express.Router();
@@ -97,6 +97,8 @@ function getFormattedDateTime() {
   return `${year}-${month}-${day} ${hour}:${minute}:${second}.${ms}`;
 }
 
+const { buildLogData } = require('./services/logFormatter');
+
 // Endpoint to log user info and increment counters
 app.post('/api/loguserinfo', (req, res) => {
   const { email = '' } = req.body;
@@ -105,6 +107,8 @@ app.post('/api/loguserinfo', (req, res) => {
     return res.status(400).json({ error: 'Invalid email format' });
   }
 
+  // Build the enriched log data using the helper
+  const kafkaData = buildLogData(userInfo);
   const encodedEmail = Buffer.from(email).toString('base64');
 
   // Increment total logins counter
@@ -120,10 +124,9 @@ app.post('/api/loguserinfo', (req, res) => {
     },
   };
   console.log(JSON.stringify(logData));
-  sendLogToKafka(logData);
+  sendLogToKafka(kafkaData);
   res.sendStatus(200);
 });
 
-// Export the app for testing or further integration
 module.exports = app;
 

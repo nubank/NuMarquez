@@ -79,11 +79,24 @@ class appMetrics {
    * @param {string} email - The user's email
    */
   incrementTotalLogins(email) {
+    if (typeof email !== 'string') {
+      console.error('Invalid email provided to incrementTotalLogins:', email);
+      return; // Early exit if email is not a string.
+    }
     const encodedEmail = this.encodeEmail(email);
     if (excludedEmails.has(encodedEmail)) {
       return; // Do not increment if user is in the excluded list
     }
     this.totalUserLoginCounter.inc();
+  }
+  
+  encodeEmail(email) {
+    // Optionally check here:
+    if (!email) {
+      console.error('No email provided to encodeEmail.');
+      return '';
+    }
+    return Buffer.from(email).toString('base64');
   }
 
   /**
@@ -104,12 +117,8 @@ class appMetrics {
         await redisWriteClient.set(key, currentTime, { EX: 7 * 24 * 60 * 60 });
         this.uniqueUserLoginCounter.inc();
 
-        const logData = {
-          accessLog: {
-            email: encodedEmail,
-            dateTime: new Date().toISOString(), 
-          },
-        };
+        const userInfo = { email}; 
+        const logData = buildLogData(userInfo);
         sendLogToKafka(logData);
       }
     } catch (err) {
