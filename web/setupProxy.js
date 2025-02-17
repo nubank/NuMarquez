@@ -4,6 +4,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware')
 const path = require('path')
 const appMetrics = require('./services/appMetrics')
 const { sendLogToKafka } = require('./services/kafkaProducer')
+const { getFormattedDateTime } = require('./services/dateTimeHelper')
 
 const app = express();
 const router = express.Router();
@@ -81,21 +82,6 @@ app.listen(port, () => {
 })
 
 app.use(express.json());
-
-// Helper function to format datetime as "YYYY-MM-DD HH:mm:SS.sss"
-function getFormattedDateTime() {
-  const d = new Date();
-  const pad = (n, size = 2) => n.toString().padStart(size, '0');
-  const year = d.getFullYear();
-  const month = pad(d.getMonth() + 1);
-  const day = pad(d.getDate());
-  const hour = pad(d.getHours());
-  const minute = pad(d.getMinutes());
-  const second = pad(d.getSeconds());
-  // JavaScript Date only provides milliseconds (0-999), so we pad to 3 digits
-  const ms = pad(d.getMilliseconds(), 3);
-  return `${year}-${month}-${day} ${hour}:${minute}:${second}.${ms}`;
-}
 
 const { buildLogData } = require('./services/logFormatter');
 

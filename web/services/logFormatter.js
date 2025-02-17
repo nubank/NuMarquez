@@ -4,7 +4,7 @@
  * @returns {object} - The enriched log data
  */
 
-const { getFormattedDateTime } = require('./setupProxy')
+const { getFormattedDateTime } = require('./dateTimeHelper')
 
 function buildLogData(userInfo) {
     const timestamp = getFormattedDateTime();
