@@ -1,5 +1,6 @@
 const client = require('prom-client')
 const crypto = require('crypto')
+const { buildLogData } = require('./logFormatter')
 
 // Import Kafka producer functions from your kafkaProducer.js file
 const { sendLogToKafka } = require('./kafkaProducer')
@@ -124,15 +125,6 @@ class appMetrics {
     } catch (err) {
       console.error('Error in incrementUniqueLogins:', err);
     }
-  }
-
-  /**
-   * Encodes the email using Base64 encoding
-   * @param {string} email
-   * @returns {string}
-   */
-  encodeEmail(email) {
-    return Buffer.from(email).toString('base64');
   }
 
   /**
