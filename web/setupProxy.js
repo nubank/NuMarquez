@@ -87,21 +87,26 @@ const { buildLogData } = require('./services/logFormatter');
 
 // Endpoint to log user info and increment counters
 app.post('/api/loguserinfo', (req, res) => {
-  const { email = '' } = req.body;
+  const {
+    email = '',
+    name,
+    locale,
+    zoneinfo
+  } = req.body;
 
   // Guard against invalid email values
   if (typeof email !== 'string') {
     return res.status(400).json({ error: 'Invalid email format' });
   }
 
-  // Define a minimal userInfo object with email
-  const userInfo = {
-    email,
-    name: userInfo.name,  
-    locale: userInfo.locale,  
-    zoneinfo: userInfo.zoneinfo,
-    email_verified: true
-  };
+    // Create userInfo from request data (without circular references)
+    const userInfo = {
+      email,
+      name,
+      locale,
+      zoneinfo,
+      email_verified: true
+    };
 
   // Build enriched log data using the helper
   const kafkaData = buildLogData(userInfo);

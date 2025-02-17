@@ -1,8 +1,10 @@
 import ReactGA from 'react-ga4';
 
 const initializeGA = () => {
-    ReactGA.initialize('G-J6G5BV3EV5');
-  };
+  const isStaging = window.location.origin.includes('staging');
+  const gaId = isStaging ? 'G-J6G5BV3EV5' : 'G-QF2RHX3HRJ';
+  ReactGA.initialize(gaId);
+};
   
   const trackPageView = () => {
     ReactGA.send({ hitType: 'pageview', page: window.location.pathname });
