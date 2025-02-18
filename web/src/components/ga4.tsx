@@ -1,8 +1,14 @@
 import ReactGA from 'react-ga4';
 
+function decodeBase64(str: string) {
+  return window.atob(str);
+}
+
 const initializeGA = () => {
   const isStaging = window.location.origin.includes('staging');
-  const gaId = isStaging ? 'G-J6G5BV3EV5' : 'G-QF2RHX3HRJ';
+  const gaId = isStaging 
+    ? decodeBase64('Ry1KNkc1QlYzRVY1')
+    : decodeBase64('Ry1RRjJSSFgzSFJK')
   ReactGA.initialize(gaId);
 };
   

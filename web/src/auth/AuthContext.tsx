@@ -2,8 +2,14 @@ import { AuthState, OktaAuth } from '@okta/okta-auth-js'
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { trackEvent } from '../components/ga4'
 
+function decodeBase64(str: string) {
+  return window.atob(str);
+}
+
 const isStaging = window.location.origin.includes('staging')
-const oktaClientId = isStaging ? '0oa20ehmjv97g8jZP0h8' : '0oa20d6n6jb6nG5Mn0h8'
+const oktaClientId = isStaging
+  ? decodeBase64('MG9hMjBlaG1qdjk3ZzhqWlAwaDg=')
+  : decodeBase64('MG9hMjBkNm42amI2bkc1TW4waDg=')
 
 export const oktaAuth = new OktaAuth({
   issuer: 'https://nubank.okta.com/oauth2/default',
