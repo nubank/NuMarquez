@@ -115,7 +115,7 @@ app.post('/api/loguserinfo', (req, res) => {
   const encodedEmail = Buffer.from(email).toString('base64');
 
   // Update metrics
-  metrics.incrementTotalLogins();
+  metrics.incrementTotalLogins(email);
   metrics.incrementUniqueLogins(email);
 
   // Console log for local debugging
