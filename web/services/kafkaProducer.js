@@ -20,7 +20,7 @@ const connectProducer = async () => {
 const sendLogToKafka = async (log) => {
   try {
     await producer.send({
-      topic: process.env.KAFKA_LOG_TOPIC || 'logs-topic',
+      topic: 'DATA-LINEAGE.USER-ACCESS-LOGS',
       messages: [
         { value: JSON.stringify(log) }
       ]
