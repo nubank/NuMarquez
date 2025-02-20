@@ -6,6 +6,7 @@ const appMetrics = require('./services/appMetrics')
 const { sendLogToKafka } = require('./services/kafkaProducer')
 const { getFormattedDateTime } = require('./services/helpers/dateTimeHelper')
 const { excludedEmails } = require('./services/helpers/excludedEmails')
+const { connectProducer } = require('./services/kafkaProducer')
 const { buildLogData } = require('./services/helpers/logFormatter')
 
 const app = express();
@@ -24,8 +25,6 @@ app.get('/metrics', async (req, res) => {
     res.status(500).end(ex)
   }
 });
-
-const { connectProducer } = require('./services/kafkaProducer')
 
 (async () => {
   try {
