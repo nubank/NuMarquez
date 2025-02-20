@@ -6,6 +6,7 @@ const appMetrics = require('./services/appMetrics')
 const { sendLogToKafka } = require('./services/kafkaProducer')
 const { getFormattedDateTime } = require('./services/helpers/dateTimeHelper')
 const { excludedEmails } = require('./services/helpers/excludedEmails')
+const { buildLogData } = require('./services/helpers/logFormatter')
 
 const app = express();
 const router = express.Router();
@@ -83,8 +84,6 @@ app.listen(port, () => {
 })
 
 app.use(express.json())
-
-const { buildLogData } = require('./services/helpers/logFormatter')
 
 // Endpoint to log user info and increment counters
 app.post('/api/loguserinfo', (req, res) => {
