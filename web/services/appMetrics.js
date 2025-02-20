@@ -115,7 +115,7 @@ class AppMetrics {
     const encodedEmail = this.encodeEmail(email);
     const key = `unique_user:${encodedEmail}`;
     const currentTime = Date.now();
-    const eightHours = 8 * 60 * 60 * 1000;
+    const sevenDays = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
     
     if (excludedEmails.has(encodedEmail)) {
       return; // skip everything for excluded emails
@@ -123,7 +123,7 @@ class AppMetrics {
 
     try {
       const storedTime = await redisReadClient.get(key);
-      if (!storedTime || (currentTime - parseInt(storedTime)) > eightHours) {
+      if (!storedTime || (currentTime - parseInt(storedTime)) > sevenDays) {
         // Set the key with expiration (7 days)
         await redisWriteClient.set(key, currentTime, { EX: 7 * 24 * 60 * 60 });
         this.uniqueUserLoginCounter.inc();
