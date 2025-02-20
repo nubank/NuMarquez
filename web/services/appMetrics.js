@@ -1,6 +1,25 @@
+/**
+ * appMetrics Module
+ *
+ * This module is responsible for collecting and exposing various Prometheus 
+ * metrics related to the application's performance and user activity. It 
+ * tracks total and unique user logins, application uptime, and user activity 
+ * over a specified duration. Additionally, it integrates with Redis for 
+ * storing login timestamps and Kafka for logging unique user events, all while 
+ * ensuring that emails on the excluded list are not processed.
+ *
+ * Author: Jonathan Moraes
+ * Created: 2025-02-19
+ * Reason: To monitor application performance and user activity while protecting 
+ * sensitive internal data.
+ */
+
 const client = require('prom-client')
 const crypto = require('crypto')
-const { buildLogData } = require('./logFormatter')
+const { buildLogData } = require('./helpers/logFormatter')
+
+// Centralize the excluded emails list
+const { excludedEmails } = require('./helpers/excludedEmails')
 
 // Import Kafka producer functions from your kafkaProducer.js file
 const { sendLogToKafka } = require('./kafkaProducer')
@@ -8,20 +27,7 @@ const { sendLogToKafka } = require('./kafkaProducer')
 // Import Redis write client from your redisClient.js file
 const { redisWriteClient, redisReadClient } = require('./redisClient')
 
-// Centralize the excluded emails list
-const excludedEmails = new Set([
-  'bWF0ZXVzLmNhcmRvc29AbnViYW5rLmNvbS5icg==',
-  'bHVpcy55YW1hZGFAbnViYW5rLmNvbS5icg==',
-  'cmFmYWVsLmJyYWdlcm9sbGlAbnViYW5rLmNvbS5icg==',
-  'a2Fpby5iZW5pY2lvQG51YmFuay5jb20uYnI=',
-  'bWljaGFlbC5zYW50YUBudWJhbmsuY29tLmJy',
-  'cGVkcm8uYXJhdWpvMUBudWJhbmsuY29tLmJy',
-  'amhvbmF0YXMucm9zZW5kb0BudWJhbmsuY29tLmJy',
-  'dml2aWFuLm1pcmFuZGFAbnViYW5rLmNvbS5icg==',
-  'YnJ1bmEucGVyaW5AbnViYW5rLmNvbS5icg=='
-]);
-
-class appMetrics {
+class AppMetrics {
   constructor() {
     // Create a Registry to hold all metrics
     this.register = new client.Registry();
@@ -110,6 +116,10 @@ class appMetrics {
     const key = `unique_user:${encodedEmail}`;
     const currentTime = Date.now();
     const eightHours = 8 * 60 * 60 * 1000;
+    
+    if (excludedEmails.has(encodedEmail)) {
+      return; // skip everything for excluded emails
+    }
 
     try {
       const storedTime = await redisReadClient.get(key);
@@ -184,4 +194,4 @@ class appMetrics {
   }
 }
 
-module.exports = appMetrics;
+module.exports = AppMetrics;

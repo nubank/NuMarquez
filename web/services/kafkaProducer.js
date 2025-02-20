@@ -1,4 +1,16 @@
-// filepath: /Users/jonathan.moraes.gft/Projects/new-numarquez/NuMarquez/web/services/kafkaProducer.js
+/**
+ * Kafka Producer Module
+ *
+ * This module configures and manages a Kafka producer for sending log messages
+ * to a specified Kafka topic. It ensures that the topic exists before sending
+ * messages and handles connection setup and error logging.
+ *
+ * Author: Jonathan Moraes
+ * Created: 2025-02-19
+ * Reason: To standardize and manage the process of sending log messages to Kafka
+ * for user access logging.
+ */
+
 const { Kafka } = require('kafkajs');
 
 const KAFKA_LOADBALANCER_DNS = process.env.KAFKA_LOADBALANCER_DNS

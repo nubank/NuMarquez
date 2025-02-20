@@ -1,7 +1,13 @@
 /**
- * Build enriched log data.
- * @param {object} userInfo - The Okta userinfo payload
- * @returns {object} - The enriched log data
+ * Log Formatter Module
+ *
+ * This module provides a function to build enriched log data from a userInfo payload.
+ * It extracts and formats information such as timestamp, pod name, username, locale,
+ * email, zone information, and email verification status.
+ *
+ * Author: Jonathan Moraes
+ * Created: 2025-02-19
+ * Reason: To standardize the format of log data sent to Kafka for user access logging.
  */
 
 const { getFormattedDateTime } = require('./dateTimeHelper')

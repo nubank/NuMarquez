@@ -1,3 +1,15 @@
+/**
+ * DateTime Helper Module
+ *
+ * This module provides a function to format the current date and time
+ * into a standardized, human-readable string. This formatted date/time
+ * is used across the application to timestamp logs and other events.
+ *
+ * Author: Jonathan Moraes
+ * Created: 2025-02-19
+ * Reason: To ensure consistent and formatted timestamps in logging and monitoring.
+ */
+
 function getFormattedDateTime() {
     const d = new Date();
     const pad = (n, size = 2) => n.toString().padStart(size, '0');

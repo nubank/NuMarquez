@@ -4,33 +4,34 @@ const { createProxyMiddleware } = require('http-proxy-middleware')
 const path = require('path')
 const appMetrics = require('./services/appMetrics')
 const { sendLogToKafka } = require('./services/kafkaProducer')
-const { getFormattedDateTime } = require('./services/dateTimeHelper')
+const { getFormattedDateTime } = require('./services/helpers/dateTimeHelper')
+const { excludedEmails } = require('./services/helpers/excludedEmails')
 
 const app = express();
 const router = express.Router();
 const distPath = path.join(__dirname, 'dist')
 
 // Initialize Metrics
-const metrics = new appMetrics();
+const metrics = new appMetrics()
 
 // Middleware to expose /metrics endpoint
 app.get('/metrics', async (req, res) => {
   try {
-    res.set('Content-Type', metrics.register.contentType);
-    res.end(await metrics.getMetrics());
+    res.set('Content-Type', metrics.register.contentType)
+    res.end(await metrics.getMetrics())
   } catch (ex) {
-    res.status(500).end(ex);
+    res.status(500).end(ex)
   }
 });
 
-const { connectProducer } = require('./services/kafkaProducer');
+const { connectProducer } = require('./services/kafkaProducer')
 
 (async () => {
   try {
-    await connectProducer();
+    await connectProducer()
   } catch (error) {
-    console.error('Error connecting Kafka producer:', error);
-    process.exit(1);
+    console.error('Error connecting Kafka producer:', error)
+    process.exit(1)
   }
 })();
 
@@ -81,9 +82,9 @@ app.listen(port, () => {
   console.log(`App listening on port ${port}!`)
 })
 
-app.use(express.json());
+app.use(express.json())
 
-const { buildLogData } = require('./services/logFormatter');
+const { buildLogData } = require('./services/helpers/logFormatter')
 
 // Endpoint to log user info and increment counters
 app.post('/api/loguserinfo', (req, res) => {
@@ -92,12 +93,20 @@ app.post('/api/loguserinfo', (req, res) => {
     name,
     locale,
     zoneinfo
-  } = req.body;
+  } = req.body
 
   // Guard against invalid email values
   if (typeof email !== 'string') {
-    return res.status(400).json({ error: 'Invalid email format' });
+    return res.status(400).json({ error: 'Invalid email format' })
   }
+
+    // Calculate the encoded email once
+    const encodedEmail = Buffer.from(email).toString('base64')
+
+    // Skip processing if the email is excluded
+    if (excludedEmails.has(encodedEmail)) {
+      return res.sendStatus(200);
+    }
 
     // Create userInfo from request data (without circular references)
     const userInfo = {
@@ -106,18 +115,18 @@ app.post('/api/loguserinfo', (req, res) => {
       locale,
       zoneinfo,
       email_verified: true
-    };
+    }
 
   // Build enriched log data using the helper
-  const kafkaData = buildLogData(userInfo);
-
-  // Encode the email for your own logs
-  const encodedEmail = Buffer.from(email).toString('base64');
+  const kafkaData = buildLogData(userInfo)
 
   // Update metrics
-  metrics.incrementTotalLogins(email);
-  metrics.incrementUniqueLogins(email);
+  metrics.incrementTotalLogins(email)
+  metrics.incrementUniqueLogins(email)
 
+  if (excludedEmails.has(encodedEmail)) {
+    return; // skip everything for excluded emails
+  }
   // Console log for local debugging
   const logData = {
     accessLog: {
@@ -125,14 +134,14 @@ app.post('/api/loguserinfo', (req, res) => {
       dateTime: getFormattedDateTime()
     }
   };
-  console.log(JSON.stringify(logData));
+  console.log(JSON.stringify(logData))
 
   // Send meta info to Kafka
-  sendLogToKafka(kafkaData);
+  sendLogToKafka(kafkaData)
 
   // Response
-  res.sendStatus(200);
+  res.sendStatus(200)
 });
 
-module.exports = app;
+module.exports = app
 
