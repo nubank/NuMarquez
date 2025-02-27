@@ -156,41 +156,39 @@ class AppMetrics {
     }, 1000); // Update every second
   }
 
-/**
- * Updates the user activity gauge every minute.
- * Examines Redis keys starting with "unique_user:" and checks if there has been any activity in the last minute.
- * Excludes specific base64-encoded emails from the count.
- */
-async updateUserActivity() {
-  setInterval(async () => {
-    try {
-      const keys = await redisReadClient.keys('unique_user:*');
-      let activeUsers = 0;
-      const currentTime = Date.now();
-      const oneMinute = 60 * 1000;
+  /**
+   * Updates the user activity gauge every minute.
+   * Checks if there is any user logged in at the moment.
+   * Excludes specific base64-encoded emails from the count.
+   */
+  async updateUserActivity() {
+    setInterval(async () => {
+      try {
+        const keys = await redisReadClient.keys('unique_user:*');
+        let userActivityDetected = false;
 
-      if (keys && keys.length) {
-        // Get values for all keys
-        const pipeline = redisReadClient.multi();
-        keys.forEach((key) => {
-          pipeline.get(key);
-        });
-        const results = await pipeline.exec();
+        if (keys && keys.length) {
+          // Get values for all keys
+          const pipeline = redisReadClient.multi();
+          keys.forEach((key) => {
+            pipeline.get(key);
+          });
+          await pipeline.exec();
 
-        keys.forEach((key, index) => {
-          const storedTime = results[index] ? parseInt(results[index]) : 0;
-          const encodedEmail = key.replace('unique_user:', '');
-          // Only count if within 1 minute and not in excluded list
-          if ((currentTime - storedTime) <= oneMinute && !excludedEmails.has(encodedEmail)) {
-            activeUsers++;
+          for (const key of keys) {
+            const encodedEmail = key.replace('unique_user:', '');
+            // Check if the email is not in the excluded list
+            if (!excludedEmails.has(encodedEmail)) {
+              userActivityDetected = true;
+              break; // No need to check further if activity is detected
+            }
           }
-        });
+        }
+        this.userActivityGauge.set(userActivityDetected ? 1 : 0);
+      } catch (err) {
+        console.error('Error updating user activity gauge:', err);
       }
-      this.userActivityGauge.set(activeUsers > 0 ? 1 : 0);
-    } catch (err) {
-      console.error('Error updating user activity gauge:', err);
-    }
-  }, 60 * 1000); // Update every minute
+    }, 60 * 1000); // Update every minute
   }
 }
 module.exports = AppMetrics;
