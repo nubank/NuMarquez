@@ -51,7 +51,7 @@ class AppMetrics {
 
     // Define Prometheus Gauge for user activity in the last 72 hours
     this.userActivityGauge = new client.Gauge({
-      name: 'user_activity_last_72_hours',
+      name: 'user_access_activity_gauge',
       help: 'Indicates whether there have been users in the last 72 hours (1) or not (0)',
     });
 
