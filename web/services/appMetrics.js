@@ -156,42 +156,41 @@ class AppMetrics {
     }, 1000); // Update every second
   }
 
-  /**
-   * Updates the user activity gauge every minute.
-   * Examines Redis keys starting with "unique_user:" and counts keys where the stored timestamp is within 72 hours.
-   * Excludes specific base64-encoded emails from the count.
-   */
-  async updateUserActivity() {
-    setInterval(async () => {
-      try {
-        const keys = await redisReadClient.keys('unique_user:*');
-        let activeUsers = 0;
-        const currentTime = Date.now();
-        const seventyTwoHours = 72 * 60 * 60 * 1000;
+/**
+ * Updates the user activity gauge every minute.
+ * Examines Redis keys starting with "unique_user:" and checks if there has been any activity in the last minute.
+ * Excludes specific base64-encoded emails from the count.
+ */
+async updateUserActivity() {
+  setInterval(async () => {
+    try {
+      const keys = await redisReadClient.keys('unique_user:*');
+      let activeUsers = 0;
+      const currentTime = Date.now();
+      const oneMinute = 60 * 1000;
 
-        if (keys && keys.length) {
-          // Get values for all keys
-          const pipeline = redisReadClient.multi();
-          keys.forEach((key) => {
-            pipeline.get(key);
-          });
-          const results = await pipeline.exec();
+      if (keys && keys.length) {
+        // Get values for all keys
+        const pipeline = redisReadClient.multi();
+        keys.forEach((key) => {
+          pipeline.get(key);
+        });
+        const results = await pipeline.exec();
 
-          keys.forEach((key, index) => {
-            const storedTime = results[index] ? parseInt(results[index]) : 0;
-            const encodedEmail = key.replace('unique_user:', '');
-            // Only count if within 72h and not in excluded list
-            if ((currentTime - storedTime) <= seventyTwoHours && !excludedEmails.has(encodedEmail)) {
-              activeUsers++;
-            }
-          });
-        }
-        this.userActivityGauge.set(activeUsers > 0 ? 1 : 0);
-      } catch (err) {
-        console.error('Error updating user activity gauge:', err);
+        keys.forEach((key, index) => {
+          const storedTime = results[index] ? parseInt(results[index]) : 0;
+          const encodedEmail = key.replace('unique_user:', '');
+          // Only count if within 1 minute and not in excluded list
+          if ((currentTime - storedTime) <= oneMinute && !excludedEmails.has(encodedEmail)) {
+            activeUsers++;
+          }
+        });
       }
-    }, 60 * 1000); // Update every minute
+      this.userActivityGauge.set(activeUsers > 0 ? 1 : 0);
+    } catch (err) {
+      console.error('Error updating user activity gauge:', err);
+    }
+  }, 60 * 1000); // Update every minute
   }
 }
-
 module.exports = AppMetrics;
