@@ -49,17 +49,10 @@ class AppMetrics {
       help: 'Uptime of the application in seconds',
     });
 
-    // Define Prometheus Gauge for user activity in the last 72 hours
-    this.userActivityGauge = new client.Gauge({
-      name: 'user_access_activity_gauge',
-      help: 'Indicates whether there have been users in the last 72 hours (1) or not (0)',
-    });
-
     // Register the counters and gauges
     this.register.registerMetric(this.uniqueUserLoginCounter);
     this.register.registerMetric(this.totalUserLoginCounter);
     this.register.registerMetric(this.appUptimeGauge);
-    this.register.registerMetric(this.userActivityGauge);
 
     // (Optional) Collect default metrics like CPU and memory usage
     client.collectDefaultMetrics({ register: this.register });
@@ -154,41 +147,6 @@ class AppMetrics {
       const uptimeSeconds = (Date.now() - this.startTime) / 1000;
       this.appUptimeGauge.set(uptimeSeconds);
     }, 1000); // Update every second
-  }
-
-  /**
-   * Updates the user activity gauge every minute.
-   * Checks if there is any user logged in at the moment.
-   * Excludes specific base64-encoded emails from the count.
-   */
-  async updateUserActivity() {
-    setInterval(async () => {
-      try {
-        const keys = await redisReadClient.keys('unique_user:*');
-        let userActivityDetected = false;
-
-        if (keys && keys.length) {
-          // Get values for all keys
-          const pipeline = redisReadClient.multi();
-          keys.forEach((key) => {
-            pipeline.get(key);
-          });
-          await pipeline.exec();
-
-          for (const key of keys) {
-            const encodedEmail = key.replace('unique_user:', '');
-            // Check if the email is not in the excluded list
-            if (!excludedEmails.has(encodedEmail)) {
-              userActivityDetected = true;
-              break; // No need to check further if activity is detected
-            }
-          }
-        }
-        this.userActivityGauge.set(userActivityDetected ? 1 : 0);
-      } catch (err) {
-        console.error('Error updating user activity gauge:', err);
-      }
-    }, 60 * 1000); // Update every minute
   }
 }
 module.exports = AppMetrics;

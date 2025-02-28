@@ -63,7 +63,7 @@ app.use('/jobs', express.static(distPath))
 app.use('/datasets/column-level', express.static(distPath))
 
 // Proxy API requests
-+app.use('/api/v1', createProxyMiddleware(apiOptions))
+app.use('/api/v1', createProxyMiddleware(apiOptions))
 app.use('/api/v2beta', createProxyMiddleware(apiOptions))
 
 // Healthcheck route
