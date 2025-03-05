@@ -9,3 +9,5 @@ CREATE TABLE IF NOT EXISTS job_facets (
 );
 
 CREATE INDEX job_facets_job_uuid_run_uuid_idx ON job_facets (job_uuid, run_uuid);
+
+ALTER TABLE job_facets REPLICA IDENTITY FULL;
