@@ -2,6 +2,10 @@
 
 CREATE TABLE IF NOT EXISTS job_versions_io_mapping_inputs as select * from job_versions_io_mapping where io_type = 'INPUT';
 CREATE TABLE IF NOT EXISTS job_versions_io_mapping_outputs as select * from job_versions_io_mapping where io_type = 'OUTPUT';
+
+-- Set the replica identity for the table
+ALTER TABLE job_versions_io_mapping_outputs REPLICA IDENTITY FULL;
+
 alter table job_versions_io_mapping_inputs add column job_uuid uuid;
 alter table job_versions_io_mapping_outputs add column job_uuid uuid;
 update job_versions_io_mapping_outputs set job_uuid = j.job_uuid from job_versions j where job_version_uuid = j.uuid;
