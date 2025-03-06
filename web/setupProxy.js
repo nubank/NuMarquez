@@ -82,8 +82,6 @@ app.listen(port, () => {
   console.log(`App listening on port ${port}!`)
 })
 
-app.use(express.json())
-
 // Endpoint to log user info and increment counters
 app.post('/api/loguserinfo', (req, res) => {
   const {
