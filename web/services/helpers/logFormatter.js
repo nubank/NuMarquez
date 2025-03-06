@@ -13,8 +13,8 @@
 const { getFormattedDateTime } = require('./dateTimeHelper')
 
 function buildLogData(userInfo) {
-    const timestamp = getFormattedDateTime();
-    const podName = process.env.POD_NAME || "unknown-pod";
+    const timestamp = getFormattedDateTime()
+    const podName = process.env.POD_NAME || "unknown-pod"
     
     return {
       timestamp,
@@ -24,7 +24,7 @@ function buildLogData(userInfo) {
       email: userInfo.email,
       zoneinfo: userInfo.zoneinfo,
       email_verified: userInfo.email_verified
-    };
+    }
   }
   
-  module.exports = { buildLogData };
+  module.exports = { buildLogData }

@@ -30,48 +30,48 @@ const { redisWriteClient, redisReadClient } = require('./redisClient')
 class AppMetrics {
   constructor() {
     // Create a Registry to hold all metrics
-    this.register = new client.Registry();
+    this.register = new client.Registry()
 
     // Define Prometheus Counters
     this.uniqueUserLoginCounter = new client.Counter({
       name: 'unique_user_login_total',
       help: 'Total number of unique user logins',
-    });
+    })
 
     this.totalUserLoginCounter = new client.Counter({
       name: 'total_user_logins',
       help: 'Total number of user logins',
-    });
+    })
 
     // Define Prometheus Gauge for application uptime
     this.appUptimeGauge = new client.Gauge({
       name: 'app_uptime_seconds',
       help: 'Uptime of the application in seconds',
-    });
+    })
 
     // Register the counters and gauges
-    this.register.registerMetric(this.uniqueUserLoginCounter);
-    this.register.registerMetric(this.totalUserLoginCounter);
-    this.register.registerMetric(this.appUptimeGauge);
+    this.register.registerMetric(this.uniqueUserLoginCounter)
+    this.register.registerMetric(this.totalUserLoginCounter)
+    this.register.registerMetric(this.appUptimeGauge)
 
     // (Optional) Collect default metrics like CPU and memory usage
-    client.collectDefaultMetrics({ register: this.register });
+    client.collectDefaultMetrics({ register: this.register })
 
     // Record the application start time
-    this.startTime = Date.now();
+    this.startTime = Date.now()
 
     // Update the uptime gauge periodically
-    this.updateUptime();
+    this.updateUptime()
 
     // Update the user activity gauge periodically
-    this.updateUserActivity();
+    this.updateUserActivity()
   }
 
   /**
    * Returns the Prometheus metrics as a string
    */
   async getMetrics() {
-    return await this.register.metrics();
+    return await this.register.metrics()
   }
 
   /**
@@ -80,23 +80,23 @@ class AppMetrics {
    */
   incrementTotalLogins(email) {
     if (typeof email !== 'string') {
-      console.error('Invalid email provided to incrementTotalLogins:', email);
+      console.error('Invalid email provided to incrementTotalLogins:', email)
       return; // Early exit if email is not a string.
     }
-    const encodedEmail = this.encodeEmail(email);
+    const encodedEmail = this.encodeEmail(email)
     if (excludedEmails.has(encodedEmail)) {
-      return; // Do not increment if user is in the excluded list
+      return // Do not increment if user is in the excluded list
     }
-    this.totalUserLoginCounter.inc();
+    this.totalUserLoginCounter.inc()
   }
   
   encodeEmail(email) {
     // Optionally check here:
     if (!email) {
-      console.error('No email provided to encodeEmail.');
-      return '';
+      console.error('No email provided to encodeEmail.')
+      return ''
     }
-    return Buffer.from(email).toString('base64');
+    return Buffer.from(email).toString('base64')
   }
 
   /**
@@ -105,28 +105,28 @@ class AppMetrics {
    * @param {string} email - The user's email
    */
   async incrementUniqueLogins(email) {
-    const encodedEmail = this.encodeEmail(email);
-    const key = `unique_user:${encodedEmail}`;
-    const currentTime = Date.now();
-    const sevenDays = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+    const encodedEmail = this.encodeEmail(email)
+    const key = `unique_user:${encodedEmail}`
+    const currentTime = Date.now()
+    const sevenDays = 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
     
     if (excludedEmails.has(encodedEmail)) {
       return; // skip everything for excluded emails
     }
 
     try {
-      const storedTime = await redisReadClient.get(key);
+      const storedTime = await redisReadClient.get(key)
       if (!storedTime || (currentTime - parseInt(storedTime)) > sevenDays) {
         // Set the key with expiration (7 days)
-        await redisWriteClient.set(key, currentTime, { EX: 7 * 24 * 60 * 60 });
+        await redisWriteClient.set(key, currentTime, { EX: 7 * 24 * 60 * 60 })
         this.uniqueUserLoginCounter.inc();
 
-        const userInfo = { email}; 
-        const logData = buildLogData(userInfo);
-        sendLogToKafka(logData);
+        const userInfo = { email}
+        const logData = buildLogData(userInfo)
+        sendLogToKafka(logData)
       }
     } catch (err) {
-      console.error('Error in incrementUniqueLogins:', err);
+      console.error('Error in incrementUniqueLogins:', err)
     }
   }
 
@@ -136,7 +136,7 @@ class AppMetrics {
    * @returns {string}
    */
   hashEmail(email) {
-    return crypto.createHash('sha256').update(email).digest('hex');
+    return crypto.createHash('sha256').update(email).digest('hex')
   }
 
   /**
@@ -144,9 +144,9 @@ class AppMetrics {
    */
   updateUptime() {
     setInterval(() => {
-      const uptimeSeconds = (Date.now() - this.startTime) / 1000;
-      this.appUptimeGauge.set(uptimeSeconds);
+      const uptimeSeconds = (Date.now() - this.startTime) / 1000
+      this.appUptimeGauge.set(uptimeSeconds)
     }, 1000); // Update every second
   }
 }
-module.exports = AppMetrics;
+module.exports = AppMetrics

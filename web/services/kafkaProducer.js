@@ -11,7 +11,7 @@
  * for user access logging.
  */
 
-const { Kafka } = require('kafkajs');
+const { Kafka } = require('kafkajs')
 
 const KAFKA_LOADBALANCER_DNS = process.env.KAFKA_LOADBALANCER_DNS
 const KAFKA_PORT = process.env.KAFKA_PORT
@@ -22,12 +22,12 @@ const kafka = new Kafka({
   brokers: [`${KAFKA_LOADBALANCER_DNS}:${KAFKA_PORT}`]
 });
 
-const producer = kafka.producer();
+const producer = kafka.producer()
 
 const connectProducer = async () => {
-  await producer.connect();
-  console.log('Kafka producer connected.');
-};
+  await producer.connect()
+  console.log('Kafka producer connected.')
+}
 
 const sendLogToKafka = async (log) => {
   try {
@@ -36,11 +36,11 @@ const sendLogToKafka = async (log) => {
       messages: [
         { value: JSON.stringify(log) }
       ]
-    });
-    console.log('Log sent to Kafka.');
+    })
+    console.log('Log sent to Kafka.')
   } catch (error) {
-    console.error('Error sending log to Kafka:', error);
+    console.error('Error sending log to Kafka:', error)
   }
-};
+}
 
-module.exports = { connectProducer, sendLogToKafka, producer };
+module.exports = { connectProducer, sendLogToKafka, producer }

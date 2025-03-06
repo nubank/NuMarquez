@@ -24,7 +24,7 @@ app.get('/metrics', async (req, res) => {
   } catch (ex) {
     res.status(500).end(ex)
   }
-});
+})
 
 (async () => {
   try {
@@ -33,7 +33,7 @@ app.get('/metrics', async (req, res) => {
     console.error('Error connecting Kafka producer:', error)
     process.exit(1)
   }
-})();
+})()
 
 const environmentVariable = (variableName) => {
   const value = process.env[variableName]
@@ -52,7 +52,7 @@ const apiOptions = {
   changeOrigin: true,
 }
 
-app.use(express.json());
+app.use(express.json())
 
 // Serve static files for specific routes
 app.use('/', express.static(distPath))
@@ -103,7 +103,7 @@ app.post('/api/loguserinfo', (req, res) => {
 
     // Skip processing if the email is excluded
     if (excludedEmails.has(encodedEmail)) {
-      return res.sendStatus(200);
+      return res.sendStatus(200)
     }
 
     // Create userInfo from request data (without circular references)

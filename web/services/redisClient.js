@@ -9,23 +9,23 @@
  * Reason: To standardize and manage the process of connecting to Redis for read and write operations.
  */
 
-const redis = require('redis');
+const redis = require('redis')
 
 // Function to create a Redis client
 const createRedisClient = (host, port, role) => {
   const client = redis.createClient({
     url: `redis://${host}:${port}`,
-  });
+  })
 
   client.on('error', (err) => {
-    console.error(`Redis ${role} client error:`, err);
-  });
+    console.error(`Redis ${role} client error:`, err)
+  })
 
   client.on('connect', () => {
-    console.log(`Connected to Redis ${role} client`);
+    console.log(`Connected to Redis ${role} client`)
   });
 
-  return client;
+  return client
 };
 
 // Create Redis write and read clients
@@ -44,14 +44,14 @@ const redisReadClient = createRedisClient(
 // Connect the clients once
 (async () => {
   try {
-    await redisWriteClient.connect();
-    await redisReadClient.connect();
-    console.log('Redis clients connected successfully.');
+    await redisWriteClient.connect()
+    await redisReadClient.connect()
+    console.log('Redis clients connected successfully.')
   } catch (err) {
-    console.error('Error connecting to Redis:', err);
-    process.exit(1);
+    console.error('Error connecting to Redis:', err)
+    process.exit(1)
   }
-})();
+})()
 
 module.exports = {
   redisWriteClient,
