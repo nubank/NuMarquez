@@ -73,52 +73,56 @@ router.get('/healthcheck', (req, res) => {
 app.use(router)
 
 // Endpoint to log user info and increment counters
-app.post('/api/loguserinfo', (req, res) => {
-  const { email = '', name, locale, zoneinfo } = req.body
+app.post('/api/loguserinfo', async (req, res, next) => {
+  try {
+    const { email = '', name, locale, zoneinfo } = req.body
 
-  // Guard against invalid email values
-  if (typeof email !== 'string') {
-    return res.status(400).json({ error: 'Invalid email format' })
-  }
-
-  // Calculate the encoded email once
-  const encodedEmail = Buffer.from(email).toString('base64')
-
-  // Skip processing if the email is excluded
-  if (excludedEmails.has(encodedEmail)) {
-    return res.sendStatus(200)
-  }
-
-  // Create userInfo from request data (without circular references)
-  const userInfo = {
-    email,
-    name,
-    locale,
-    zoneinfo,
-    email_verified: true
-  }
-
-  // Build enriched log data using the helper
-  const kafkaData = buildLogData(userInfo)
-
-  // Update metrics
-  metrics.incrementTotalLogins(email)
-  metrics.incrementUniqueLogins(email)
-
-  // Console log for local debugging
-  const logData = {
-    accessLog: {
-      email: encodedEmail,
-      dateTime: getFormattedDateTime()
+    // Guard against invalid email values
+    if (typeof email !== 'string') {
+      return res.status(400).json({ error: 'Invalid email format' })
     }
+
+    // Calculate the encoded email once
+    const encodedEmail = Buffer.from(email).toString('base64')
+
+    // Skip processing if the email is excluded
+    if (excludedEmails.has(encodedEmail)) {
+      return res.sendStatus(200)
+    }
+
+    // Create userInfo from request data (without circular references)
+    const userInfo = {
+      email,
+      name,
+      locale,
+      zoneinfo,
+      email_verified: true
+    }
+
+    // Build enriched log data using the helper
+    const kafkaData = buildLogData(userInfo)
+
+    // Update metrics
+    metrics.incrementTotalLogins(email)
+    metrics.incrementUniqueLogins(email)
+
+    // Console log for local debugging
+    const logData = {
+      accessLog: {
+        email: encodedEmail,
+        dateTime: getFormattedDateTime()
+      }
+    }
+    console.log(JSON.stringify(logData))
+
+    // Send meta info to Kafka
+    sendLogToKafka(kafkaData)
+
+    // Response
+    res.sendStatus(200)
+  } catch (error) {
+    next(error)
   }
-  console.log(JSON.stringify(logData))
-
-  // Send meta info to Kafka
-  sendLogToKafka(kafkaData)
-
-  // Response
-  res.sendStatus(200)
 })
 
 // **Catch-All Route to Serve index.html for Client-Side Routing**
