@@ -62,9 +62,6 @@ class AppMetrics {
 
     // Update the uptime gauge periodically
     this.updateUptime()
-
-    // Update the user activity gauge periodically
-    this.updateUserActivity()
   }
 
   /**
