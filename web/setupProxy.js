@@ -116,7 +116,7 @@ app.post('/api/loguserinfo', async (req, res, next) => {
     console.log(JSON.stringify(logData))
 
     // Send meta info to Kafka
-    sendLogToKafka(kafkaData)
+    await sendLogToKafka(kafkaData)
 
     // Response
     res.sendStatus(200)
@@ -128,6 +128,12 @@ app.post('/api/loguserinfo', async (req, res, next) => {
 // **Catch-All Route to Serve index.html for Client-Side Routing**
 app.get('*', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'))
+})
+
+// Error-handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack)
+  res.status(500).send('Something broke!')
 })
 
 // Start the server (only one call to app.listen)
