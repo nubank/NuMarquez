@@ -1,4 +1,3 @@
-
 const express = require('express')
 const { createProxyMiddleware } = require('http-proxy-middleware')
 const path = require('path')
@@ -9,8 +8,8 @@ const { excludedEmails } = require('./services/helpers/excludedEmails')
 const { connectProducer } = require('./services/kafkaProducer')
 const { buildLogData } = require('./services/helpers/logFormatter')
 
-const app = express();
-const router = express.Router();
+const app = express()
+const router = express.Router()
 const distPath = path.join(__dirname, 'dist')
 
 // Initialize Metrics
@@ -26,6 +25,7 @@ app.get('/metrics', async (req, res) => {
   }
 })
 
+// Connect Kafka producer
 (async () => {
   try {
     await connectProducer()
@@ -70,48 +70,33 @@ app.use('/api/v2beta', createProxyMiddleware(apiOptions))
 router.get('/healthcheck', (req, res) => {
   res.send('OK')
 })
-
 app.use(router)
-
-// **Catch-All Route to Serve index.html for Client-Side Routing**
-app.get('*', (req, res) => {
-  res.sendFile(path.join(distPath, 'index.html'))
-})
-
-app.listen(port, () => {
-  console.log(`App listening on port ${port}!`)
-})
 
 // Endpoint to log user info and increment counters
 app.post('/api/loguserinfo', (req, res) => {
-  const {
-    email = '',
-    name,
-    locale,
-    zoneinfo
-  } = req.body
+  const { email = '', name, locale, zoneinfo } = req.body
 
   // Guard against invalid email values
   if (typeof email !== 'string') {
     return res.status(400).json({ error: 'Invalid email format' })
   }
 
-    // Calculate the encoded email once
-    const encodedEmail = Buffer.from(email).toString('base64')
+  // Calculate the encoded email once
+  const encodedEmail = Buffer.from(email).toString('base64')
 
-    // Skip processing if the email is excluded
-    if (excludedEmails.has(encodedEmail)) {
-      return res.sendStatus(200)
-    }
+  // Skip processing if the email is excluded
+  if (excludedEmails.has(encodedEmail)) {
+    return res.sendStatus(200)
+  }
 
-    // Create userInfo from request data (without circular references)
-    const userInfo = {
-      email,
-      name,
-      locale,
-      zoneinfo,
-      email_verified: true
-    }
+  // Create userInfo from request data (without circular references)
+  const userInfo = {
+    email,
+    name,
+    locale,
+    zoneinfo,
+    email_verified: true
+  }
 
   // Build enriched log data using the helper
   const kafkaData = buildLogData(userInfo)
@@ -120,16 +105,13 @@ app.post('/api/loguserinfo', (req, res) => {
   metrics.incrementTotalLogins(email)
   metrics.incrementUniqueLogins(email)
 
-  if (excludedEmails.has(encodedEmail)) {
-    return; // skip everything for excluded emails
-  }
   // Console log for local debugging
   const logData = {
     accessLog: {
       email: encodedEmail,
       dateTime: getFormattedDateTime()
     }
-  };
+  }
   console.log(JSON.stringify(logData))
 
   // Send meta info to Kafka
@@ -137,7 +119,16 @@ app.post('/api/loguserinfo', (req, res) => {
 
   // Response
   res.sendStatus(200)
-});
+})
+
+// **Catch-All Route to Serve index.html for Client-Side Routing**
+app.get('*', (req, res) => {
+  res.sendFile(path.join(distPath, 'index.html'))
+})
+
+// Start the server (only one call to app.listen)
+app.listen(port, () => {
+  console.log(`App listening on port ${port}!`)
+})
 
 module.exports = app
-
