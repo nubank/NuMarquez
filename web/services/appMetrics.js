@@ -78,7 +78,7 @@ class AppMetrics {
   incrementTotalLogins(email) {
     if (typeof email !== 'string') {
       console.error('Invalid email provided to incrementTotalLogins:', email)
-      return; // Early exit if email is not a string.
+      return // Early exit if email is not a string.
     }
     const encodedEmail = this.encodeEmail(email)
     if (excludedEmails.has(encodedEmail)) {
