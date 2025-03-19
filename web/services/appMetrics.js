@@ -128,9 +128,9 @@ class AppMetrics {
         await redisWriteClient.set(key, currentTime, { EX: 7 * 24 * 60 * 60 });
         this.uniqueUserLoginCounter.inc();
 
-        const userInfo = { email}; 
-        const logData = buildLogData(userInfo);
-        sendLogToKafka(logData);
+        // const userInfo = {email}; 
+        // const logData = buildLogData(userInfo);
+        // sendLogToKafka(logData);
       }
     } catch (err) {
       console.error('Error in incrementUniqueLogins:', err);

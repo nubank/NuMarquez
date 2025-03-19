@@ -134,8 +134,10 @@ app.post('/api/loguserinfo', (req, res) => {
   };
   console.log(JSON.stringify(logData))
 
-  // Send meta info to Kafka
-  sendLogToKafka(kafkaData)
+  // Only send to Kafka if email is not in excluded list
+  if (!excludedEmails.has(encodedEmail)) {
+    sendLogToKafka(kafkaData)
+  }
 
   // Response
   res.sendStatus(200)
