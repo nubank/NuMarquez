@@ -5,7 +5,6 @@
  * metrics related to the application's performance and user activity. It 
  * tracks total and unique user logins, application uptime, and user activity 
  * over a specified duration. Additionally, it integrates with Redis for 
- * storing login timestamps and Kafka for logging unique user events, all while 
  * ensuring that emails on the excluded list are not processed.
  *
  * Author: Jonathan Moraes
@@ -16,13 +15,9 @@
 
 const client = require('prom-client')
 const crypto = require('crypto')
-const { buildLogData } = require('./helpers/logFormatter')
 
 // Centralize the excluded emails list
 const { excludedEmails } = require('./helpers/excludedEmails')
-
-// Import Kafka producer functions from your kafkaProducer.js file
-const { sendLogToKafka } = require('./kafkaProducer')
 
 // Import Redis write client from your redisClient.js file
 const { redisWriteClient, redisReadClient } = require('./redisClient')
@@ -127,10 +122,6 @@ class AppMetrics {
         // Set the key with expiration (7 days)
         await redisWriteClient.set(key, currentTime, { EX: 7 * 24 * 60 * 60 });
         this.uniqueUserLoginCounter.inc();
-
-        // const userInfo = {email}; 
-        // const logData = buildLogData(userInfo);
-        // sendLogToKafka(logData);
       }
     } catch (err) {
       console.error('Error in incrementUniqueLogins:', err);
