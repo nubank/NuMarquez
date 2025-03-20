@@ -45,16 +45,16 @@ class AppMetrics {
     });
 
     // Define Prometheus Gauge for user activity in the last 72 hours
-    this.userActivityGauge = new client.Gauge({
-      name: 'user_access_activity_gauge',
-      help: 'Indicates whether there have been users in the last 72 hours (1) or not (0)',
-    });
+    // this.userActivityGauge = new client.Gauge({
+    //   name: 'user_access_activity_gauge',
+    //   help: 'Indicates whether there have been users in the last 72 hours (1) or not (0)',
+    // });
 
     // Register the counters and gauges
     this.register.registerMetric(this.uniqueUserLoginCounter);
     this.register.registerMetric(this.totalUserLoginCounter);
     this.register.registerMetric(this.appUptimeGauge);
-    this.register.registerMetric(this.userActivityGauge);
+    // this.register.registerMetric(this.userActivityGauge);
 
     // (Optional) Collect default metrics like CPU and memory usage
     client.collectDefaultMetrics({ register: this.register });
@@ -170,12 +170,12 @@ class AppMetrics {
             const encodedEmail = key.replace('unique_user:', '');
             // Check if the email is not in the excluded list
             if (!excludedEmails.has(encodedEmail)) {
-              userActivityDetected = true;
+              // userActivityDetected = true;
               break; // No need to check further if activity is detected
             }
           }
         }
-        this.userActivityGauge.set(userActivityDetected ? 1 : 0);
+        // this.userActivityGauge.set(userActivityDetected ? 1 : 0);
       } catch (err) {
         console.error('Error updating user activity gauge:', err);
       }

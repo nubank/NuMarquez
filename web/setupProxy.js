@@ -135,9 +135,6 @@ app.post('/api/loguserinfo', (req, res) => {
   // Only send to Kafka if email is not in excluded list
   if (!excludedEmails.has(encodedEmail)) {
     sendLogToKafka(kafkaData)
-    console.log('Not sent to Kafka')
-  } else {
-    console.log('Sent to Kafka')
   }
 
   // Response
