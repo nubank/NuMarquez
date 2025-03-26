@@ -1075,32 +1075,45 @@ public interface OpenLineageDao extends BaseDao {
                   datasetVersionRow.getUuid(),
                   inputFields);
 
-              // Extract the values ​​of transformationType and transformationDescription
-              String transformationType = columnLineage.getInputFields().stream()
-                  .flatMap(inputField -> inputField.getTransformations().stream())
-                  .map(LineageEvent.ColumnLineageTransformation::getType)
-                  .findFirst()
-                  .orElse(null);
+              List<ColumnLineageRow> lineageRows = new ArrayList<>();
 
-              String transformationDescription = columnLineage.getInputFields().stream()
-                  .flatMap(inputField -> inputField.getTransformations().stream())
-                  .map(transformation -> String.format("subtype:%s:::masking:%s:::description:%s",
-                      transformation.getSubtype(),
-                      transformation.isMasking(),
-                      transformation.getDescription()))
-                  .findFirst()
-                  .orElse(null);
+              for (LineageEvent.ColumnLineageInputField inputField : columnLineage.getInputFields()) {
+                  Optional<InputFieldData> matchingField = runFields.stream()
+                      .filter(fieldData ->
+                          inputField.getNamespace().equals(fieldData.getNamespace()) &&
+                          inputField.getName().equals(fieldData.getDatasetName()) &&
+                          inputField.getField().equals(fieldData.getField()))
+                      .findFirst();
 
-              return daos
-                  .getColumnLineageDao()
-                  .upsertColumnLineageRow(
-                      datasetVersionRow.getUuid(),
-                      outputField.get().getUuid(),
-                      inputFields,
-                      transformationDescription,
-                      transformationType,
-                      now)
-                  .stream();
+                  if (matchingField.isPresent()) {
+                      Pair<UUID, UUID> inputFieldPair = Pair.of(
+                          matchingField.get().getDatasetVersionUuid(),
+                          matchingField.get().getDatasetFieldUuid());
+
+                      for (LineageEvent.ColumnLineageTransformation transformation : inputField.getTransformations()) {
+                          String transformationType = transformation.getType();
+                          String transformationDescription = String.format(
+                              "subtype:%s:::masking:%s:::description:%s",
+                              transformation.getSubtype(),
+                              transformation.isMasking(),
+                              transformation.getDescription());
+
+                          lineageRows.addAll(
+                              daos.getColumnLineageDao().upsertColumnLineageRow(
+                                  datasetVersionRow.getUuid(),
+                                  outputField.get().getUuid(),
+                                  Collections.singletonList(inputFieldPair),
+                                  transformationDescription,
+                                  transformationType,
+                                  now));
+                      }
+                  } else {
+                      log.warn("Input field not found: {} | {} | {}", 
+                          inputField.getNamespace(), inputField.getName(), inputField.getField());
+                  }
+              }
+
+              return lineageRows.stream();
             })
         .collect(Collectors.toList());
   }
