@@ -10,6 +10,9 @@ import static marquez.db.LineageTestUtils.newDatasetFacet;
 import static marquez.db.LineageTestUtils.writeDownstreamLineage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,6 +40,7 @@ import marquez.db.LineageTestUtils.DatasetConsumerJob;
 import marquez.db.LineageTestUtils.JobLineage;
 import marquez.db.OpenLineageDao;
 import marquez.db.RunDao;
+import marquez.db.models.JobRow;
 import marquez.db.models.UpdateLineageRow;
 import marquez.jdbi.MarquezJdbiExternalPostgresExtension;
 import marquez.service.LineageService.UpstreamRunLineage;
@@ -669,4 +673,80 @@ public class LineageServiceTest {
 
     assertThat(lineage.getGraph()).hasSize(2);
   }
+
+      @Test
+    public void testDirectLineageForDatasetNode() {
+        // Mock the LineageDao to return some job data
+        LineageDao lineageDao = mock(LineageDao.class);
+        JobDao jobDao = mock(JobDao.class);
+        RunDao runDao = mock(RunDao.class);
+        LineageService lineageService = new LineageService(lineageDao, jobDao, runDao);
+
+        UUID datasetUuid = UUID.randomUUID();
+        when(lineageDao.getDirectDatasetsFromDataset(datasetUuid, 1)).thenReturn(Collections.emptySet());
+
+        // Call the directLineage method with a dataset node
+        NodeId datasetNodeId = NodeId.of(new DatasetId(new NamespaceName("test_ns"), new DatasetName("test_dataset")));
+        Lineage lineage = lineageService.directLineage(datasetNodeId, 1);
+
+        // Verify that the lineage is not null
+        assertThat(lineage).isNotNull();
+    }
+
+    @Test
+    public void testDirectLineageForJobNode() {
+        // Mock the LineageDao to return some job data
+        LineageDao lineageDao = mock(LineageDao.class);
+        JobDao jobDao = mock(JobDao.class);
+        RunDao runDao = mock(RunDao.class);
+        LineageService lineageService = new LineageService(lineageDao, jobDao, runDao);
+
+        UUID jobUuid = UUID.randomUUID();
+        JobRow jobRow = mock(JobRow.class);
+        when(jobRow.getUuid()).thenReturn(jobUuid);
+        when(jobDao.findJobByNameAsRow(any(), any())).thenReturn(Optional.of(jobRow));
+        when(lineageDao.getDirectDatasets(Collections.singleton(jobUuid), 1)).thenReturn(Collections.emptySet());
+
+        // Call the directLineage method with a job node
+        NodeId jobNodeId = NodeId.of(new JobId(new NamespaceName("test_ns"), new JobName("test_job")));
+        Lineage lineage = lineageService.directLineage(jobNodeId, 1);
+
+        // Verify that the lineage is not null
+        assertThat(lineage).isNotNull();
+    }
+
+    @Test
+    public void testDirectLineageNoDataFound() {
+        // Mock the LineageDao to return an empty set
+        LineageDao lineageDao = mock(LineageDao.class);
+        JobDao jobDao = mock(JobDao.class);
+        RunDao runDao = mock(RunDao.class);
+        LineageService lineageService = new LineageService(lineageDao, jobDao, runDao);
+
+        UUID datasetUuid = UUID.randomUUID();
+        when(lineageDao.getDirectDatasetsFromDataset(datasetUuid, 1)).thenReturn(Collections.emptySet());
+
+        // Call the directLineage method
+        NodeId datasetNodeId = NodeId.of(new DatasetId(new NamespaceName("test_ns"), new DatasetName("test_dataset")));
+        Lineage lineage = lineageService.directLineage(datasetNodeId, 1);
+
+        // Verify that the lineage is not null
+        assertThat(lineage).isNotNull();
+    }
+
+    @Test
+    public void testDirectLineageNodeIdNotFound() {
+        // Mock the LineageDao to return an empty set
+        LineageDao lineageDao = mock(LineageDao.class);
+        JobDao jobDao = mock(JobDao.class);
+        RunDao runDao = mock(RunDao.class);
+        LineageService lineageService = new LineageService(lineageDao, jobDao, runDao);
+
+        // Call the directLineage method
+        NodeId datasetNodeId = NodeId.of(new DatasetId(new NamespaceName("test_ns"), new DatasetName("test_dataset")));
+        Lineage lineage = lineageService.directLineage(datasetNodeId, 1);
+
+        // Verify that the lineage is not null
+        assertThat(lineage).isNotNull();
+    }
 }

@@ -112,6 +112,19 @@ public class OpenLineageResource extends BaseResource {
   @ResponseMetered
   @ExceptionMetered
   @GET
+  @Path("/lineage/direct")
+  @Produces(APPLICATION_JSON)
+  public Response getDirectLineage(
+      @QueryParam("nodeId") @NotNull NodeId nodeId,
+      @QueryParam("depth") @DefaultValue(DEFAULT_DEPTH) int depth) {
+    throwIfNotExists(nodeId);
+    return Response.ok(lineageService.directLineage(nodeId, depth)).build();
+  }
+
+  @Timed
+  @ResponseMetered
+  @ExceptionMetered
+  @GET
   @Consumes(APPLICATION_JSON)
   @Produces(APPLICATION_JSON)
   @Path("/lineage")
