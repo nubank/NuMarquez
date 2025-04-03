@@ -274,8 +274,7 @@ public interface LineageDao {
       FROM jobs_view j
       LEFT JOIN grouped_io gi ON j.uuid = gi.job_uuid
       WHERE j.uuid IN (SELECT job_uuid FROM related_jobs)
-      ORDER BY j.uuid
-      LIMIT 1000;
+      ORDER BY j.uuid;
       """)
   Set<JobData> getDirectDatasetsFromDataset(@Bind("datasetUuid") UUID datasetUuid, @Bind("depth") int depth);
 
