@@ -133,7 +133,7 @@ public class LineageService extends DelegatingLineageDao {
   }
 
   public Lineage directLineage(@NonNull NodeId nodeId, int depth) {
-    int safeDepth = Math.min(depth, 1);
+    int safeDepth = depth;
     log.debug("Getting direct lineage for node '{}' with depth '{}'", nodeId.getValue(), depth);
   
     if (nodeId.isDatasetType()) {
