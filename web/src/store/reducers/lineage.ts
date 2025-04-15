@@ -5,6 +5,10 @@ import {
   FETCH_LINEAGE_END,
   FETCH_LINEAGE_START,
   FETCH_LINEAGE_SUCCESS,
+  FETCH_FILTERED_LINEAGE_START,
+  FETCH_FILTERED_LINEAGE_SUCCESS,
+  FETCH_FILTERED_LINEAGE_ERROR,
+  FETCH_FILTERED_LINEAGE_END,
   RESET_LINEAGE,
   SET_BOTTOM_BAR_HEIGHT,
   SET_LINEAGE_GRAPH_DEPTH,
@@ -19,6 +23,7 @@ import { setBottomBarHeight, setLineageGraphDepth, setSelectedNode } from '../ac
 
 export interface ILineageState {
   lineage: LineageGraph
+  filteredLineage: LineageGraph
   selectedNode: Nullable<string>
   bottomBarHeight: number
   depth: number
@@ -29,6 +34,7 @@ export interface ILineageState {
 
 const initialState: ILineageState = {
   lineage: { graph: [] },
+  filteredLineage: { graph: [] },
   selectedNode: null,
   bottomBarHeight: (window.innerHeight - HEADER_HEIGHT) / 3,
   depth: 5,
@@ -51,8 +57,17 @@ export default (state = initialState, action: ILineageActions) => {
       return { ...state, isLoading: false }
     case FETCH_LINEAGE_SUCCESS:
       return { ...state, lineage: action.payload }
+
+    case FETCH_FILTERED_LINEAGE_START:
+      return { ...state, isLoading: true }
+    case FETCH_FILTERED_LINEAGE_SUCCESS:
+      return { ...state, isLoading: false, filteredLineage: action.payload }
+    case FETCH_FILTERED_LINEAGE_ERROR:
+      return { ...state, isLoading: false }
+    case FETCH_FILTERED_LINEAGE_END:
+      return { ...state, isLoading: false }
+
     case SET_SELECTED_NODE:
-      // reset the selected index if we are not on the i/o tab
       return { ...state, selectedNode: action.payload, tabIndex: state.tabIndex === 1 ? 1 : 0 }
     case SET_BOTTOM_BAR_HEIGHT:
       return {
@@ -78,7 +93,11 @@ export default (state = initialState, action: ILineageActions) => {
         showFullGraph: action.payload,
       }
     case RESET_LINEAGE: {
-      return { ...state, lineage: { graph: [] } }
+      return {
+        ...state,
+        lineage: { graph: [] },
+        filteredLineage: { graph: [] },
+      }
     }
     default:
       return state

@@ -13,15 +13,12 @@ import {
 import { ArrowBackIosRounded, Refresh } from '@mui/icons-material'
 import { HEADER_HEIGHT, theme } from '../../helpers/theme'
 import { fetchLineage } from '../../store/actionCreators'
-import { getLineage } from '../../store/requests/lineage'
+import { getLineage, getFilteredLineage } from '../../store/requests/lineage'
 import { trackEvent } from '../../components/ga4'
 import { truncateText } from '../../helpers/text'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import MQTooltip from '../../components/core/tooltip/MQTooltip'
 import MqText from '../../components/core/text/MqText'
-import { findDownstreamNodes, findUpstreamNodes } from './layout'
-import { LineageGraph } from '../../types/api'
-import { LineageNode } from '../../types/lineage'
 
 interface ActionBarProps {
   nodeType: 'DATASET' | 'JOB'
@@ -35,16 +32,6 @@ interface ActionBarProps {
   isLoading: boolean
 }
 
-const filterVisibleNodes = (lineageGraph: LineageGraph, nodeType: string, namespace: string, name: string, isFull: boolean) => {
-  return lineageGraph.graph.filter((node: LineageNode) => {
-    if (isFull) return true
-    return (
-      findDownstreamNodes(lineageGraph, `${nodeType}:${namespace}:${name}`).includes(node) ||
-      findUpstreamNodes(lineageGraph, `${nodeType}:${namespace}:${name}`).includes(node) ||
-      node.id === `${nodeType}:${namespace}:${name}`
-    )
-  })
-}
 
 export const ActionBar = ({
   nodeType,
@@ -130,143 +117,96 @@ export const ActionBar = ({
   }, [namespace, name, nodeType, depth, fetchLineage])
 
   const handleDepthChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLoading(true);
+    setLoading(true)
 
-    const requestedDepth = parseInt(e.target.value, 10) || 0;
-    const currentMaxDepth = isFull ? maxDepthFull : maxDepthNonFull;
+    const requestedDepth = parseInt(e.target.value, 10) || 0
 
     if (!namespace || !name) {
-      setSnackbarMessage("Namespace or name is missing");
-
-      setOpenSnackbar(true);
-      if (snackbarTimeoutRef.current) clearTimeout(snackbarTimeoutRef.current);
+      setSnackbarMessage('Namespace or name is missing')
+      setOpenSnackbar(true)
+      if (snackbarTimeoutRef.current) clearTimeout(snackbarTimeoutRef.current)
       snackbarTimeoutRef.current = setTimeout(() => {
-        setOpenSnackbar(false);
-        setLoading(false); 
-      }, 2000);
-
-      return;
-    }
-
-   
-    if (currentMaxDepth !== null && requestedDepth <= currentMaxDepth) {
-      setDepth(requestedDepth);
-      searchParams.set('depth', requestedDepth.toString());
-      setSearchParams(searchParams);
-      setLoading(false);
-      return;
-    }
-
-    if (currentMaxDepth !== null && requestedDepth > currentMaxDepth) {
-      setSnackbarMessage("You've reached the maximum depth");
-
-      setOpenSnackbar(true);
-      if (snackbarTimeoutRef.current) clearTimeout(snackbarTimeoutRef.current);
-      snackbarTimeoutRef.current = setTimeout(() => {
-        setOpenSnackbar(false);
-        setLoading(false); 
-      }, 2000);
-
-      if (isFull && maxDepthFull === null) {
-        setMaxDepthFull(currentMaxDepth);
-        localStorage.setItem('maxDepthFull', currentMaxDepth.toString());
-      } else if (!isFull && maxDepthNonFull === null) {
-        setMaxDepthNonFull(currentMaxDepth);
-        localStorage.setItem('maxDepthNonFull', currentMaxDepth.toString());
-      }
-
-      setDepth(currentMaxDepth);
-      searchParams.set('depth', currentMaxDepth.toString());
-      setSearchParams(searchParams);
-
-      return;
+        setOpenSnackbar(false)
+        setLoading(false)
+      }, 2000)
+      return
     }
 
     try {
-      const response = await getLineage(nodeType, namespace, name, requestedDepth);
+      const response = isFull
+        ? await getLineage(nodeType, namespace, name, requestedDepth) 
+        : await getFilteredLineage(nodeType, namespace, name, requestedDepth) 
+
+      console.log('Lineage response:', response) //CONSOLE RESPONSE
 
       if (Array.isArray(response.graph)) {
-        const totalObjects = response.graph.length;
-        const visibleNodes = filterVisibleNodes(response, nodeType, namespace, name, isFull);
-        const visibleObjectsCount = visibleNodes.length;
+        const totalObjects = response.graph.length
 
-        const objectsCount = isFull ? totalObjects : visibleObjectsCount;
-
-        setDepth(requestedDepth);
-        searchParams.set('depth', requestedDepth.toString());
-        setSearchParams(searchParams);
-        setPrevObjectsCount(objectsCount);
-
-        if (prevObjectsCount !== null && objectsCount <= prevObjectsCount) {
-          const newMaxDepth = requestedDepth - 1;
+        if (prevObjectsCount !== null && totalObjects <= prevObjectsCount) {
+          const newMaxDepth = requestedDepth - 1
 
           if (isFull && maxDepthFull === null) {
-            setMaxDepthFull(newMaxDepth);
-            setSnackbarMessage("You've reached the maximum depth");
-            setOpenSnackbar(true);
+            setMaxDepthFull(newMaxDepth)
+            setSnackbarMessage("You've reached the maximum depth for All Dependencies")
+            setOpenSnackbar(true)
 
-            if (snackbarTimeoutRef.current) clearTimeout(snackbarTimeoutRef.current);
+            if (snackbarTimeoutRef.current) clearTimeout(snackbarTimeoutRef.current)
             snackbarTimeoutRef.current = setTimeout(() => {
-              setOpenSnackbar(false);
-            }, 2000);
+              setOpenSnackbar(false)
+            }, 2000)
 
-            localStorage.setItem('maxDepthFull', newMaxDepth.toString());
+            localStorage.setItem('maxDepthFull', newMaxDepth.toString())
           } else if (!isFull && maxDepthNonFull === null) {
-            setMaxDepthNonFull(newMaxDepth);
-            setSnackbarMessage("You've reached the maximum depth");
-            setOpenSnackbar(true);
+            setMaxDepthNonFull(newMaxDepth)
+            setSnackbarMessage("You've reached the maximum depth for Direct Dependencies")
+            setOpenSnackbar(true)
 
-            if (snackbarTimeoutRef.current) clearTimeout(snackbarTimeoutRef.current);
+            if (snackbarTimeoutRef.current) clearTimeout(snackbarTimeoutRef.current)
             snackbarTimeoutRef.current = setTimeout(() => {
-              setOpenSnackbar(false);
-            }, 2000);
+              setOpenSnackbar(false)
+            }, 2000)
 
-            localStorage.setItem('maxDepthNonFull', newMaxDepth.toString());
+            localStorage.setItem('maxDepthNonFull', newMaxDepth.toString())
           }
         }
-      } else {
-        setSnackbarMessage("Failed to fetch lineage data");
 
-        setOpenSnackbar(true);
-        if (snackbarTimeoutRef.current) clearTimeout(snackbarTimeoutRef.current);
-        snackbarTimeoutRef.current = setTimeout(() => {
-          setOpenSnackbar(false);
-          setLoading(false); 
-        }, 2000);
-
-        console.error('Failed to fetch lineage data');
+        setDepth(requestedDepth)
+        searchParams.set('depth', requestedDepth.toString())
+        setSearchParams(searchParams)
+        setPrevObjectsCount(totalObjects) 
       }
     } catch (error) {
-      setSnackbarMessage("Error fetching lineage data");
-
-      setOpenSnackbar(true);
-      if (snackbarTimeoutRef.current) clearTimeout(snackbarTimeoutRef.current);
+      console.error('Error fetching lineage data:', error)
+      setSnackbarMessage('Error fetching lineage data')
+      setOpenSnackbar(true)
+      if (snackbarTimeoutRef.current) clearTimeout(snackbarTimeoutRef.current)
       snackbarTimeoutRef.current = setTimeout(() => {
-        setOpenSnackbar(false);
-        setLoading(false); 
-      }, 2000);
-
-      console.error('Error fetching lineage data:', error);
+        setOpenSnackbar(false)
+      }, 2000)
     }
 
-    setLoading(false);
-    trackEvent('ActionBar', 'Change Depth', requestedDepth.toString());
-  };
+    setLoading(false)
+  }
 
   const handleCloseSnackbar = useCallback(() => {
-    setOpenSnackbar(false);
+    setOpenSnackbar(false)
     if (snackbarTimeoutRef.current) {
       clearTimeout(snackbarTimeoutRef.current)
       snackbarTimeoutRef.current = null
     }
-  }, []);
+  }, [])
 
-  const handleAllDependenciesToggle = useCallback((checked: boolean) => {
-    setIsFull(checked)
-    searchParams.set('isFull', checked.toString())
-    setSearchParams(searchParams)
-    trackEvent('ActionBar', 'Toggle All Dependencies', checked.toString())
-  }, [setIsFull, searchParams, setSearchParams])
+  const handleAllDependenciesToggle = useCallback(
+    (checked: boolean) => {
+      setIsFull(checked)
+      searchParams.set('isFull', checked.toString())
+      setSearchParams(searchParams)
+      trackEvent('ActionBar', 'Toggle All Dependencies', checked.toString())
+
+      handleDepthChange({ target: { value: depth.toString() } } as React.ChangeEvent<HTMLInputElement>)
+    },
+    [setIsFull, searchParams, setSearchParams, depth]
+  )
 
   const handleHideColumnNamesToggle = useCallback((checked: boolean) => {
     setIsCompact(checked)

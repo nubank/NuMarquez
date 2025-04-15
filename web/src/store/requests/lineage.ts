@@ -18,3 +18,16 @@ export const getLineage = async (
   const url = `${API_URL}/lineage?nodeId=${nodeId}&depth=${depth}`
   return genericFetchWrapper(url, { method: 'GET' }, 'fetchLineage')
 }
+
+export const getFilteredLineage = async (
+  nodeType: JobOrDataset,
+  namespace: string,
+  name: string,
+  depth: number
+) => {
+  const encodedNamespace = encodeURIComponent(namespace)
+  const encodedName = encodeURIComponent(name)
+  const nodeId = generateNodeId(nodeType, encodedNamespace, encodedName)
+  const url = `${API_URL}/lineage/direct?nodeId=${nodeId}&depth=${depth}` // Novo endpoint
+  return genericFetchWrapper(url, { method: 'GET' }, 'fetchFilteredLineage')
+}

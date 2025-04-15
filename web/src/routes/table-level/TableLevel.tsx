@@ -42,7 +42,7 @@ const TableLevel: React.FC<TableLevelProps> = ({
   const { nodeType, namespace, name } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const [depth, setDepth] = useState(Number(searchParams.get('depth')) || 2)
+  const [depth, setDepth] = useState(Number(searchParams.get('depth')) || 0)
   const [isCompact, setIsCompact] = useState(searchParams.get('isCompact') === 'true')
   const [isFull, setIsFull] = useState(searchParams.get('isFull') === 'true')
 
