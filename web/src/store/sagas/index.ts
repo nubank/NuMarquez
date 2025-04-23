@@ -168,6 +168,30 @@ export function* fetchLineage() {
   }
 }
 
+export function* fetchFilteredLineage() {
+  while (true) {
+    try {
+      const { payload } = yield take(FETCH_FILTERED_LINEAGE)
+
+      yield put(fetchFilteredLineageStart())
+
+      const result: LineageGraph = yield call(
+        getFilteredLineage,
+        payload.nodeType,
+        payload.namespace,
+        payload.name,
+        payload.depth
+      )
+
+      yield put(fetchFilteredLineageSuccess(result))
+    } catch (e) {
+      yield put(fetchFilteredLineageError('Something went wrong while fetching filtered lineage'))
+    } finally {
+      yield put(fetchFilteredLineageEnd())
+    }
+  }
+}
+
 export function* fetchColumnLineage() {
   while (true) {
     try {
@@ -605,29 +629,7 @@ export function* fetchJobsByState() {
   }
 }
 
-export function* fetchFilteredLineageSaga() {
-  while (true) {
-    try {
-      const { payload } = yield take(FETCH_FILTERED_LINEAGE)
 
-      yield put(fetchFilteredLineageStart())
-
-      const result: LineageGraph = yield call(
-        getFilteredLineage,
-        payload.nodeType,
-        payload.namespace,
-        payload.name,
-        payload.depth
-      )
-
-      yield put(fetchFilteredLineageSuccess(result))
-    } catch (e) {
-      yield put(fetchFilteredLineageError('Something went wrong while fetching filtered lineage'))
-    } finally {
-      yield put(fetchFilteredLineageEnd())
-    }
-  }
-}
 
 export default function* rootSaga(): Generator {
   const sagasThatAreKickedOffImmediately = [fetchNamespaces(), fetchTags()]
@@ -662,7 +664,7 @@ export default function* rootSaga(): Generator {
     fetchJobMetricsSaga(),
     fetchDatasetMetricsSaga(),
     fetchSourceMetricsSaga(),
-    fetchFilteredLineageSaga(),
+    fetchFilteredLineage(),
   ]
 
   yield all([...sagasThatAreKickedOffImmediately, ...sagasThatWatchForAction])

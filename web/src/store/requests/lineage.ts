@@ -28,6 +28,6 @@ export const getFilteredLineage = async (
   const encodedNamespace = encodeURIComponent(namespace)
   const encodedName = encodeURIComponent(name)
   const nodeId = generateNodeId(nodeType, encodedNamespace, encodedName)
-  const url = `${API_URL}/lineage/direct?nodeId=${nodeId}&depth=${depth}` // Novo endpoint
+  const url = `${API_URL}/lineage/direct?nodeId=${nodeId}&depth=${depth}` 
   return genericFetchWrapper(url, { method: 'GET' }, 'fetchFilteredLineage')
 }
