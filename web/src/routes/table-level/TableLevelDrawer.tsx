@@ -56,8 +56,7 @@ const TableLevelDrawer = ({ lineageGraph }: StateProps & DispatchProps) => {
 };
 
 const mapStateToProps = (state: IState) => ({
-  lineageGraph: state.lineage.lineage,
-});
-
+  lineageGraph: state.lineage.isFull ? state.lineage.lineage : state.lineage.filteredLineage, 
+})
 const mapDispatchToProps = (dispatch: Redux.Dispatch) => bindActionCreators({}, dispatch);
 export default connect(mapStateToProps, mapDispatchToProps)(TableLevelDrawer);

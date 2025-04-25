@@ -22,6 +22,7 @@ import { Nullable } from '../../types/util/Nullable'
 import { setBottomBarHeight, setLineageGraphDepth, setSelectedNode } from '../actionCreators'
 
 export interface ILineageState {
+  isFull: boolean
   lineage: LineageGraph
   filteredLineage: LineageGraph
   selectedNode: Nullable<string>
@@ -39,6 +40,7 @@ const initialState: ILineageState = {
   bottomBarHeight: (window.innerHeight - HEADER_HEIGHT) / 3,
   depth: 5,
   isLoading: false,
+  isFull: false,
   tabIndex: 0,
   showFullGraph: true,
 }

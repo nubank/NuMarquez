@@ -255,7 +255,7 @@ TableLineageDatasetNode.getLayoutOptions = (node: TableLineageDatasetNodeProps['
 })
 
 const mapStateToProps = (state: IState) => ({
-  lineage: state.lineage.lineage,
+  lineage: state.lineage.isFull ? state.lineage.lineage : state.lineage.filteredLineage,
   dataset: state.dataset.result,
 })
 
