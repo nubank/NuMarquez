@@ -23,6 +23,7 @@ import { IntervalMetric } from '../requests/intervalMetrics'
 import { JobOrDataset } from '../../types/lineage'
 import { LineageMetric } from '../requests/lineageMetrics'
 import { Nullable } from '../../types/util/Nullable'
+import { getFilteredLineage } from '../requests/lineage'
 
 export const fetchEvents = (after: string, before: string, limit: number, offset: number) => ({
   type: actionTypes.FETCH_EVENTS,
@@ -474,6 +475,39 @@ export const fetchLineageStart = () => ({
 
 export const fetchLineageEnd = () => ({
   type: actionTypes.FETCH_LINEAGE_END,
+})
+
+export const fetchFilteredLineage = (
+  nodeType: JobOrDataset,
+  namespace: string,
+  name: string,
+  depth: number
+) => ({
+  type: actionTypes.FETCH_FILTERED_LINEAGE,
+  payload: {
+    nodeType,
+    namespace,
+    name,
+    depth,
+  },
+})
+
+export const fetchFilteredLineageStart = () => ({
+  type: actionTypes.FETCH_FILTERED_LINEAGE_START,
+})
+
+export const fetchFilteredLineageSuccess = (lineage: LineageGraph) => ({
+  type: actionTypes.FETCH_FILTERED_LINEAGE_SUCCESS,
+  payload: lineage,
+})
+
+export const fetchFilteredLineageError = (error: string) => ({
+  type: actionTypes.FETCH_FILTERED_LINEAGE_ERROR,
+  payload: error,
+})
+
+export const fetchFilteredLineageEnd = () => ({
+  type: actionTypes.FETCH_FILTERED_LINEAGE_END,
 })
 
 export const fetchColumnLineage = (
