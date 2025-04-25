@@ -33,13 +33,9 @@ import marquez.common.models.JobId;
 import marquez.common.models.RunId;
 import marquez.db.JobDao;
 import marquez.db.LineageDao;
-import marquez.db.LineageDao.DatasetSummary;
-import marquez.db.LineageDao.JobSummary;
-import marquez.db.LineageDao.RunSummary;
 import marquez.db.RunDao;
 import marquez.db.models.JobRow;
 import marquez.service.DelegatingDaos.DelegatingLineageDao;
-import marquez.service.LineageService.UpstreamRunLineage;
 import marquez.service.models.DatasetData;
 import marquez.service.models.Edge;
 import marquez.service.models.Graph;
@@ -356,11 +352,15 @@ public class LineageService extends DelegatingLineageDao {
           if (ds == null) {
             continue;
           }
-          // IMPORTANT: Use the string values
-          Optional<UUID> maybeJob = getJobFromInputOrOutput(
-              ds.getName().getValue(),
-              ds.getNamespace().getValue());
-          maybeJob.ifPresent(nextJobs::add);
+          // Only follow upstream/downstream direction based on whether the dataset 
+          // is an input or output
+          if (jd.getInputUuids().contains(dsUuid)) {
+            // IMPORTANT: Use the string values
+            Optional<UUID> maybeJob = getJobFromInputOrOutput(
+                ds.getName().getValue(),
+                ds.getNamespace().getValue());
+            maybeJob.ifPresent(nextJobs::add);
+          }
         }
       }
 
