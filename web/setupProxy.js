@@ -85,6 +85,11 @@ app.listen(port, () => {
 
 app.use(express.json())
 
+app.post('/api/logpayload', (req, res) => {
+  console.log('ElkNodes Result:', req.body)
+  res.sendStatus(200)
+})
+
 // Endpoint to log user info and increment counters
 app.post('/api/loguserinfo', (req, res) => {
   const {

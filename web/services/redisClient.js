@@ -9,37 +9,46 @@
  * Reason: To standardize and manage the process of connecting to Redis for read and write operations.
  */
 
-const redis = require('redis');
+// const redis = require('redis');
 
-// Function to create a Redis client
-const createRedisClient = (host, port, role) => {
-  const client = redis.createClient({
-    url: `redis://${host}:${port}`,
-  });
+// // Function to create a Redis client
+// const createRedisClient = (host, port, role) => {
+//   const client = redis.createClient({
+//     url: `redis://${host}:${port}`,
+//   });
 
-  client.on('error', (err) => {
-    console.error(`Redis ${role} client error:`, err);
-  });
+//   client.on('error', (err) => {
+//     console.error(`Redis ${role} client error:`, err);
+//   });
 
-  client.on('connect', () => {
-    console.log(`Connected to Redis ${role} client`);
-  });
+//   client.on('connect', () => {
+//     console.log(`Connected to Redis ${role} client`);
+//   });
 
-  return client;
-};
+//   return client;
+// };
 
-// Create Redis write and read clients
-const redisWriteClient = createRedisClient(
-  process.env.REDIS_WRITE_HOST,
-  process.env.REDIS_PORT,
-  'write'
-);
+// // Create Redis write and read clients
+// const redisWriteClient = createRedisClient(
+//   process.env.REDIS_WRITE_HOST,
+//   process.env.REDIS_PORT,
+//   'write'
+// );
 
-const redisReadClient = createRedisClient(
-  process.env.REDIS_READ_HOST,
-  process.env.REDIS_PORT,
-  'read'
-);
+// const redisReadClient = createRedisClient(
+//   process.env.REDIS_READ_HOST,
+//   process.env.REDIS_PORT,
+//   'read'
+// );
+
+const redisHost = process.env.REDIS_HOST || 'localhost';
+const redisPort = process.env.REDIS_PORT || 6379;
+
+const redisWriteClient = require('redis').createClient({
+  url: `redis://${redisHost}:${redisPort}`,
+});
+
+const redisReadClient = redisWriteClient.duplicate();
 
 // Connect the clients once
 (async () => {

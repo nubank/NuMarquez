@@ -18,14 +18,16 @@ function decodeBase64(str: string) {
   return window.atob(str);
 }
 
-const isStaging = window.location.origin.includes('staging')
-const oktaClientId = isStaging
-  ? decodeBase64('MG9hMjBlaG1qdjk3ZzhqWlAwaDg=')
-  : decodeBase64('MG9hMjBkNm42amI2bkc1TW4waDg=')
+// const isStaging = window.location.origin.includes('staging')
+// const oktaClientId = isStaging
+//   ? decodeBase64('MG9hMjBlaG1qdjk3ZzhqWlAwaDg=')
+//   : decodeBase64('MG9hMjBkNm42amI2bkc1TW4waDg=')
 
 export const oktaAuth = new OktaAuth({
-  issuer: 'https://nubank.okta.com/oauth2/default',
-  clientId: oktaClientId,
+  // issuer: 'https://nubank.okta.com/oauth2/default',
+  // clientId: oktaClientId,
+  issuer: "https://dev-15036446.okta.com/oauth2/default",
+  clientId: "0oam2eo020yRwwPbu5d7",
   redirectUri: window.location.origin + '/login/callback',
   pkce: true,
   scopes: ['openid', 'profile', 'email'],

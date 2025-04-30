@@ -12,6 +12,8 @@ import com.codahale.metrics.annotation.ResponseMetered;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
+import java.util.UUID;
+
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.ws.rs.Consumes;
@@ -39,8 +41,9 @@ public class SourceResource extends BaseResource {
 
   /**
    * @deprecated Prefer OpenLineage, see <a
-   *     href="https://openlineage.io">https://openlineage.io</a>. This method is scheduled to be
-   *     removed in release {@code 0.25.0}.
+   *             href="https://openlineage.io">https://openlineage.io</a>. This
+   *             method is scheduled to be
+   *             removed in release {@code 0.25.0}.
    */
   @Timed
   @ResponseMetered
@@ -61,8 +64,7 @@ public class SourceResource extends BaseResource {
   @Path("{source}")
   @Produces(APPLICATION_JSON)
   public Response get(@PathParam("source") SourceName name) {
-    final Source source =
-        sourceService.findBy(name.getValue()).orElseThrow(() -> new SourceNotFoundException(name));
+    final Source source = sourceService.findBy(name.getValue()).orElseThrow(() -> new SourceNotFoundException(name));
     return Response.ok(source).build();
   }
 

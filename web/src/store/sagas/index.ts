@@ -18,6 +18,7 @@ import {
   FETCH_DATASET_METRICS,
   FETCH_DATASET_VERSIONS,
   FETCH_EVENTS,
+  FETCH_FILTERED_LINEAGE,
   FETCH_INITIAL_DATASET_VERSIONS,
   FETCH_JOB,
   FETCH_JOBS,
@@ -92,6 +93,8 @@ import {
   deleteDatasetTagSuccess,
   deleteJobSuccess,
   deleteJobTagSuccess,
+  fetchColumnLineageEnd,
+  fetchColumnLineageStart,
   fetchColumnLineageSuccess,
   fetchDatasetMetricsSuccess,
   fetchDatasetSuccess,
@@ -104,7 +107,9 @@ import {
   fetchJobSuccess,
   fetchJobsSuccess,
   fetchLatestRunsSuccess,
+  fetchLineageEnd,
   fetchLineageMetricsSuccess,
+  fetchLineageStart,
   fetchLineageSuccess,
   fetchNamespacesSuccess,
   fetchOpenSearchDatasetsSuccess,
@@ -113,9 +118,13 @@ import {
   fetchSearchSuccess,
   fetchSourceMetricsSuccess,
   fetchTagsSuccess,
+  fetchFilteredLineageStart,
+  fetchFilteredLineageSuccess,
+  fetchFilteredLineageError,
+  fetchFilteredLineageEnd,
 } from '../actionCreators'
 import { getColumnLineage } from '../requests/columnlineage'
-import { getLineage } from '../requests/lineage'
+import { getLineage, getFilteredLineage } from '../requests/lineage'
 import { getOpenSearchDatasets, getOpenSearchJobs, getSearch } from '../requests/search'
 
 export function* fetchTags() {
@@ -142,6 +151,7 @@ export function* fetchLineage() {
   while (true) {
     try {
       const { payload } = yield take(FETCH_LINEAGE)
+      yield put(fetchLineageStart())
       const result: LineageGraph = yield call(
         getLineage,
         payload.nodeType,
@@ -152,6 +162,32 @@ export function* fetchLineage() {
       yield put(fetchLineageSuccess(result))
     } catch (e) {
       yield put(applicationError('Something went wrong while fetching lineage'))
+    } finally {
+      yield put(fetchLineageEnd())
+    }
+  }
+}
+
+export function* fetchFilteredLineage() {
+  while (true) {
+    try {
+      const { payload } = yield take(FETCH_FILTERED_LINEAGE)
+
+      yield put(fetchFilteredLineageStart())
+
+      const result: LineageGraph = yield call(
+        getFilteredLineage,
+        payload.nodeType,
+        payload.namespace,
+        payload.name,
+        payload.depth
+      )
+
+      yield put(fetchFilteredLineageSuccess(result))
+    } catch (e) {
+      yield put(fetchFilteredLineageError('Something went wrong while fetching filtered lineage'))
+    } finally {
+      yield put(fetchFilteredLineageEnd())
     }
   }
 }
@@ -160,6 +196,7 @@ export function* fetchColumnLineage() {
   while (true) {
     try {
       const { payload } = yield take(FETCH_COLUMN_LINEAGE)
+      yield put(fetchColumnLineageStart())
       const result: ColumnLineageGraph = yield call(
         getColumnLineage,
         payload.nodeType,
@@ -171,6 +208,8 @@ export function* fetchColumnLineage() {
       yield put(fetchColumnLineageSuccess(result))
     } catch (e) {
       yield put(applicationError('Something went wrong while fetching lineage'))
+    } finally {
+      yield put(fetchColumnLineageEnd())
     }
   }
 }
@@ -590,6 +629,8 @@ export function* fetchJobsByState() {
   }
 }
 
+
+
 export default function* rootSaga(): Generator {
   const sagasThatAreKickedOffImmediately = [fetchNamespaces(), fetchTags()]
   const sagasThatWatchForAction = [
@@ -623,6 +664,7 @@ export default function* rootSaga(): Generator {
     fetchJobMetricsSaga(),
     fetchDatasetMetricsSaga(),
     fetchSourceMetricsSaga(),
+    fetchFilteredLineage(),
   ]
 
   yield all([...sagasThatAreKickedOffImmediately, ...sagasThatWatchForAction])

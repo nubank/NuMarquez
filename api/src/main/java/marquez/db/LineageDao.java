@@ -106,179 +106,6 @@ public interface LineageDao {
   Set<JobData> getLineage(@BindList Set<UUID> jobIds, int depth);
 
   @SqlQuery("""
-      WITH job_io AS (
-        SELECT DISTINCT
-          io.job_uuid,
-          io.dataset_uuid,
-          io.io_type
-        FROM job_versions_io_mapping io
-        WHERE io.is_current_job_version = TRUE
-      ),
-      dataset_to_dataset_edges AS (
-        SELECT DISTINCT
-          job_io_input.dataset_uuid AS input_dataset_uuid,
-          job_io_output.dataset_uuid AS output_dataset_uuid
-        FROM job_io AS job_io_input
-        JOIN job_io AS job_io_output ON job_io_input.job_uuid = job_io_output.job_uuid
-        WHERE job_io_input.io_type = 'INPUT'
-          AND job_io_output.io_type = 'OUTPUT'
-          AND (job_io_input.dataset_uuid = :datasetUuid OR job_io_output.dataset_uuid = :datasetUuid)
-      )
-      SELECT DISTINCT ds.*, dv.fields, dv.lifecycle_state
-      FROM datasets_view ds
-      LEFT JOIN dataset_versions dv ON dv.uuid = ds.current_version_uuid
-      LEFT JOIN dataset_symlinks dsym ON dsym.namespace_uuid = ds.namespace_uuid AND dsym.name = ds.name
-      WHERE dsym.is_primary = true
-        AND ds.uuid IN (
-          SELECT input_dataset_uuid FROM direct_edges WHERE output_dataset_uuid = :datasetUuid
-          UNION
-          SELECT output_dataset_uuid FROM direct_edges WHERE input_dataset_uuid = :datasetUuid
-        )
-      """)
-  Set<DatasetData> getDirectlyConnectedDatasets(@Bind("datasetUuid") UUID datasetUuid);
-
-  @SqlQuery("""
-      WITH RECURSIVE
-        job_io AS (
-          SELECT DISTINCT
-            io.job_uuid,
-            io.job_symlink_target_uuid,
-            io.dataset_uuid,
-            io.io_type
-          FROM job_versions_io_mapping io
-          WHERE io.is_current_job_version = TRUE
-        ),
-        dataset_to_dataset_edges AS (
-          SELECT DISTINCT
-            job_io_input.dataset_uuid AS input_dataset_uuid,
-            job_io_output.dataset_uuid AS output_dataset_uuid,
-            job_io_input.job_uuid AS job_uuid
-          FROM job_io job_io_input
-          JOIN job_io job_io_output ON job_io_input.job_uuid = job_io_output.job_uuid
-          WHERE job_io_input.io_type = 'INPUT' AND job_io_output.io_type = 'OUTPUT'
-            AND job_io_input.job_uuid IN (<jobIds>)
-          UNION ALL
-          SELECT DISTINCT
-            job_io.dataset_uuid AS input_dataset_uuid,
-            NULL::uuid AS output_dataset_uuid,
-            job_io.job_uuid AS job_uuid
-          FROM job_io
-          WHERE job_io.io_type = 'INPUT'
-            AND job_io.job_uuid IN (<jobIds>)
-        ),
-        lineage(job_uuid, job_symlink_target_uuid, dataset_uuid, io_type, depth, path) AS (
-          SELECT
-            NULL::uuid AS job_uuid,
-            NULL::uuid AS job_symlink_target_uuid,
-            input_dataset_uuid AS dataset_uuid,
-            CAST('INPUT' AS text) AS io_type,
-            0 AS depth,
-            ARRAY[input_dataset_uuid] AS path
-          FROM dataset_to_dataset_edges
-          WHERE input_dataset_uuid IS NOT NULL
-          UNION ALL
-          SELECT
-            NULL::uuid AS job_uuid,
-            NULL::uuid AS job_symlink_target_uuid,
-            output_dataset_uuid AS dataset_uuid,
-            CAST('OUTPUT' AS text) AS io_type,
-            0 AS depth,
-            ARRAY[output_dataset_uuid] AS path
-          FROM dataset_to_dataset_edges
-          WHERE output_dataset_uuid IS NOT NULL
-          UNION
-          SELECT
-            CASE
-              WHEN job_io.job_uuid IS NOT NULL THEN job_io.job_uuid
-              ELSE job_io.job_symlink_target_uuid
-            END AS job_uuid,
-            job_io.job_symlink_target_uuid,
-            job_io.dataset_uuid,
-            job_io.io_type,
-            l.depth + 1 AS depth,
-            l.path || job_io.dataset_uuid
-          FROM job_io
-          JOIN lineage l ON l.dataset_uuid = job_io.dataset_uuid
-          WHERE l.depth < 3 AND NOT job_io.dataset_uuid = ANY(l.path)
-        ),
-        grouped_datasets AS (
-          SELECT
-            l2.job_uuid,
-            l2.job_symlink_target_uuid,
-            ARRAY_AGG(DISTINCT CASE WHEN l2.io_type = 'INPUT' THEN l2.dataset_uuid END)
-              FILTER (WHERE l2.io_type = 'INPUT') AS input_uuids,
-            ARRAY_AGG(DISTINCT CASE WHEN l2.io_type = 'OUTPUT' THEN l2.dataset_uuid END)
-              FILTER (WHERE l2.io_type = 'OUTPUT') AS output_uuids
-          FROM lineage l2
-          GROUP BY l2.job_uuid, l2.job_symlink_target_uuid
-        )
-      SELECT DISTINCT ON (j.uuid)
-        j.*,
-        COALESCE(gd.input_uuids, ARRAY[]::uuid[]) AS input_uuids,
-        COALESCE(gd.output_uuids, ARRAY[]::uuid[]) AS output_uuids
-      FROM jobs_view j
-      LEFT JOIN grouped_datasets gd ON (j.uuid = gd.job_uuid OR j.uuid = gd.job_symlink_target_uuid)
-      WHERE
-        j.uuid IN (SELECT job_uuid FROM lineage WHERE job_uuid IS NOT NULL UNION ALL SELECT job_uuid FROM job_io WHERE dataset_uuid IN (SELECT dataset_uuid FROM lineage))
-      ORDER BY
-        j.uuid;
-        """)
-  Set<JobData> getDirectDatasets(@BindList("jobIds") Set<UUID> jobIds, @Bind("depth") int depth);
-
-  @SqlQuery("""
-      WITH job_io AS (
-        SELECT DISTINCT
-          io.job_uuid,
-          io.dataset_uuid,
-          io.io_type
-        FROM job_versions_io_mapping io
-        WHERE io.is_current_job_version = TRUE
-      ),
-      direct_edges AS (
-        SELECT DISTINCT
-          job_io_input.dataset_uuid AS input_dataset_uuid,
-          job_io_output.dataset_uuid AS output_dataset_uuid,
-          job_io_input.job_uuid AS job_uuid
-        FROM job_io AS job_io_input
-        JOIN job_io AS job_io_output ON job_io_input.job_uuid = job_io_output.job_uuid
-        WHERE job_io_input.io_type = 'INPUT'
-          AND job_io_output.io_type = 'OUTPUT'
-          AND (job_io_input.dataset_uuid = :datasetUuid OR job_io_output.dataset_uuid = :datasetUuid)
-      ),
-      related_jobs AS (
-        SELECT DISTINCT job_uuid
-        FROM job_io
-        WHERE dataset_uuid = :datasetUuid
-        UNION
-        SELECT DISTINCT job_uuid
-        FROM job_io
-        WHERE dataset_uuid IN (
-          SELECT input_dataset_uuid FROM direct_edges
-          UNION
-          SELECT output_dataset_uuid FROM direct_edges
-        )
-      ),
-      grouped_io AS (
-        SELECT
-          job_uuid,
-          ARRAY_AGG(DISTINCT dataset_uuid) FILTER (WHERE io_type = 'INPUT') AS input_uuids,
-          ARRAY_AGG(DISTINCT dataset_uuid) FILTER (WHERE io_type = 'OUTPUT') AS output_uuids
-        FROM job_io
-        WHERE job_uuid IN (SELECT job_uuid FROM related_jobs)
-        GROUP BY job_uuid
-      )
-      SELECT DISTINCT ON (j.uuid)
-        j.*,
-        COALESCE(gi.input_uuids, ARRAY[]::uuid[]) AS input_uuids,
-        COALESCE(gi.output_uuids, ARRAY[]::uuid[]) AS output_uuids
-      FROM jobs_view j
-      LEFT JOIN grouped_io gi ON j.uuid = gi.job_uuid
-      WHERE j.uuid IN (SELECT job_uuid FROM related_jobs)
-      ORDER BY j.uuid;
-      """)
-  Set<JobData> getDirectDatasetsFromDataset(@Bind("datasetUuid") UUID datasetUuid, @Bind("depth") int depth);
-
-  @SqlQuery("""
       SELECT j.*, NULL as input_uuids, NULL AS output_uuids FROM jobs_view j
       WHERE j.parent_job_uuid= :jobId
       LIMIT 1""")
@@ -409,4 +236,98 @@ public interface LineageDao {
       ORDER BY depth ASC, job_name ASC;
       """)
   List<UpstreamRunRow> getUpstreamRuns(@NotNull UUID runId, int depth);
+
+  /**
+   * Fetch all of the jobs that consume or produce the datasets that are consumed
+   * or produced by the
+   * input jobIds. This returns a single layer from the BFS using datasets as
+   * edges. Jobs that have
+   * no input or output datasets will have no results. Jobs that have no upstream
+   * producers or
+   * downstream consumers will have the original jobIds returned.
+   * 
+   * @param jobIds
+   * @return
+   */
+  @SqlQuery("""
+      SELECT DISTINCT j.*,
+             job_io.inputs AS input_uuids,
+             job_io.outputs AS output_uuids
+      FROM (
+         SELECT
+           io.job_uuid AS job_uuid,
+           io.job_symlink_target_uuid AS job_symlink_target_uuid,
+           ARRAY_AGG(DISTINCT io.dataset_uuid) FILTER (WHERE io_type='INPUT') AS inputs,
+           ARRAY_AGG(DISTINCT io.dataset_uuid) FILTER (WHERE io_type='OUTPUT') AS outputs
+         FROM job_versions_io_mapping io
+         WHERE io.is_current_job_version = TRUE
+         GROUP BY io.job_symlink_target_uuid, io.job_uuid
+      ) job_io
+      INNER JOIN jobs_view j
+        ON (j.uuid=job_io.job_uuid OR j.uuid=job_io.job_symlink_target_uuid)
+      WHERE j.uuid IN (<jobIds>) OR j.symlink_target_uuid IN (<jobIds>)
+      """)
+  Set<JobData> getDirectLineage(@BindList Set<UUID> jobIds);
+
+  /**
+   * Fetch all of the jobs that consume or produce the datasets that are consumed
+   * or produced by the
+   * input jobIds. This returns a single layer from the BFS using datasets as
+   * edges. Jobs that have
+   * no input or output datasets will have no results. Jobs that have no upstream
+   * producers or
+   * downstream consumers will have the original jobIds returned.
+   *
+   * @param jobIds
+   * @return
+   */
+  default Set<JobData> getDirectLineage(@BindList Set<UUID> jobIds, int depth) {
+    throw new UnsupportedOperationException("Use getDirectLineage and iterate in LineageService.");
+  }
+
+  /**
+   * Checks if the requested depth is possible for the given node.
+   * Returns true if the lineage can reach at least the requested depth.
+   *
+   * @param jobId          The UUID of the starting job
+   * @param requestedDepth The depth we want to validate
+   * @return true if the requested depth is reachable
+   */
+  @SqlQuery("""
+          WITH RECURSIVE lineage_depth AS (
+              -- Base case: start with the given job
+              SELECT
+                  job_uuid,
+                  job_symlink_target_uuid,
+                  0 as depth
+              FROM job_versions_io_mapping
+              WHERE (job_uuid = :jobId OR job_symlink_target_uuid = :jobId)
+              AND is_current_job_version = TRUE
+
+              UNION
+
+              SELECT
+                  io.job_uuid,
+                  io.job_symlink_target_uuid,
+                  ld.depth + 1
+              FROM lineage_depth ld
+              JOIN job_versions_io_mapping io ON (
+                  EXISTS (
+                      SELECT 1
+                      FROM job_versions_io_mapping io1
+                      WHERE (io1.job_uuid = ld.job_uuid OR io1.job_symlink_target_uuid = ld.job_uuid)
+                      AND io1.dataset_uuid = io.dataset_uuid
+                      AND io1.is_current_job_version = TRUE
+                  )
+              )
+              WHERE io.is_current_job_version = TRUE
+              AND io.job_uuid != ld.job_uuid  -- Avoid cycles
+              AND ld.depth < :requestedDepth  -- Stop when we reach requested depth
+          )
+          SELECT EXISTS (
+              SELECT 1 FROM lineage_depth
+              WHERE depth = :requestedDepth - 1
+          ) as depth_possible
+      """)
+  boolean isDepthPossible(@Bind("jobId") UUID jobId, @Bind("requestedDepth") int requestedDepth);
 }

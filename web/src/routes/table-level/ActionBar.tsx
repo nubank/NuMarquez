@@ -1,66 +1,72 @@
+import React, { useEffect, useState, useCallback } from 'react'
 import {
-  Alert,
   Box,
   CircularProgress,
   Divider,
   FormControlLabel,
   IconButton,
-  Snackbar,
   Switch,
   TextField,
 } from '@mui/material'
 import { ArrowBackIosRounded, Refresh } from '@mui/icons-material'
 import { HEADER_HEIGHT, theme } from '../../helpers/theme'
-import { fetchLineage } from '../../store/actionCreators'
-import { getLineage } from '../../store/requests/lineage'
+import { fetchLineage, fetchFilteredLineage } from '../../store/actionCreators'
 import { trackEvent } from '../../components/ga4'
 import { truncateText } from '../../helpers/text'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import MQTooltip from '../../components/core/tooltip/MQTooltip'
 import MqText from '../../components/core/text/MqText'
-import React, { useEffect, useState } from 'react'
 
 interface ActionBarProps {
   nodeType: 'DATASET' | 'JOB'
   fetchLineage: typeof fetchLineage
+  fetchFilteredLineage: typeof fetchFilteredLineage
   depth: number
   setDepth: (depth: number) => void
   isCompact: boolean
   setIsCompact: (isCompact: boolean) => void
   isFull: boolean
   setIsFull: (isFull: boolean) => void
+  isLoading: boolean
 }
 
 export const ActionBar = ({
   nodeType,
   fetchLineage,
+  fetchFilteredLineage,
   depth,
   setDepth,
   isCompact,
   setIsCompact,
   isFull,
   setIsFull,
+  isLoading,
 }: ActionBarProps) => {
   const { namespace, name } = useParams()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [loading, setLoading] = useState(false)
-  const [openSnackbar, setOpenSnackbar] = useState(false)
-  const [maxDepth, setMaxDepth] = useState<number | null>(null)
-  const [prevObjectsCount, setPrevObjectsCount] = useState<number | null>(null)
-  const [prevDepth, setPrevDepth] = useState<number | null>(null)
+  // const [openSnackbar, setOpenSnackbar] = useState(false)
+  // const [snackbarMessage, setSnackbarMessage] = useState('')
+  // const [maxDepthFull, setMaxDepthFull] = useState<number | null>(null)
+  // const [maxDepthNonFull, setMaxDepthNonFull] = useState<number | null>(null)
+  // const [prevObjectsCount, setPrevObjectsCount] = useState<number | null>(null)
+  // const [prevDepth, setPrevDepth] = useState<number | null>(null)
+  // const snackbarTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     const resetLimitState = () => {
-      setMaxDepth(null)
-      setPrevObjectsCount(null)
-      setPrevDepth(null)
+      // setMaxDepthFull(null)
+      // setMaxDepthNonFull(null)
+      // setPrevObjectsCount(null)
+      // setPrevDepth(null)
     }
 
     const prevName = localStorage.getItem('prevName')
     if (prevName && prevName !== name) {
-      localStorage.removeItem('maxDepth')
+      localStorage.removeItem('maxDepthFull')
+      localStorage.removeItem('maxDepthNonFull')
     }
 
     localStorage.setItem('prevName', name || '')
@@ -69,105 +75,95 @@ export const ActionBar = ({
   }, [name])
 
   useEffect(() => {
-    const storedMaxDepth = localStorage.getItem('maxDepth')
-    if (storedMaxDepth) {
-      const parsedDepth = parseInt(storedMaxDepth)
-      setMaxDepth(parsedDepth)
+    const storedMaxDepthFull = localStorage.getItem('maxDepthFull')
+    const storedMaxDepthNonFull = localStorage.getItem('maxDepthNonFull')
 
-      if (depth > parsedDepth) {
-        setDepth(parsedDepth)
-        searchParams.set('depth', parsedDepth.toString())
-        setSearchParams(searchParams)
-      }
-    }
+    // if (storedMaxDepthFull) {
+    //   const parsedDepthFull = parseInt(storedMaxDepthFull)
+    //   setMaxDepthFull(parsedDepthFull)
+    // }
+
+    // if (storedMaxDepthNonFull) {
+    //   const parsedDepthNonFull = parseInt(storedMaxDepthNonFull)
+    //   setMaxDepthNonFull(parsedDepthNonFull)
+    // }
+
+    // const currentMaxDepth = isFull ? maxDepthFull : maxDepthNonFull
+    // if (currentMaxDepth !== null && depth > currentMaxDepth) {
+    //   setDepth(currentMaxDepth)
+    //   searchParams.set('depth', currentMaxDepth.toString())
+    //   setSearchParams(searchParams)
+    // }
 
     if (!searchParams.has('isCompact')) {
       searchParams.set('isCompact', 'true')
       setSearchParams(searchParams)
       setIsCompact(true)
     }
-  }, [])
+  }, [isFull])
 
-  const handleBackClick = () => {
+  const handleBackClick = useCallback(() => {
     navigate(nodeType === 'JOB' ? '/jobs' : '/')
     trackEvent('ActionBar', 'Click Back Button', nodeType)
-  }
+  }, [navigate, nodeType])
 
-  const handleRefreshClick = () => {
+  const handleRefreshClick = useCallback(() => {
     if (namespace && name) {
       fetchLineage(nodeType, namespace, name, depth, true)
       trackEvent('ActionBar', 'Refresh Lineage', nodeType)
     }
-  }
+  }, [namespace, name, nodeType, depth, fetchLineage])
 
-  const handleDepthChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLoading(true)
+  const handleDepthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const requestedDepth = parseInt(e.target.value, 10) || 0
 
-    const newDepth = isNaN(parseInt(e.target.value)) ? 0 : parseInt(e.target.value)
-
-    if (maxDepth !== null && newDepth > maxDepth) {
-      setDepth(maxDepth)
-      searchParams.set('depth', maxDepth.toString())
-      setSearchParams(searchParams)
-      setOpenSnackbar(true)
-      setTimeout(() => setLoading(false), 2000)
+    if (!namespace || !name) {
+      // setSnackbarMessage('Namespace or name is missing')
+      // setOpenSnackbar(true)
+      // if (snackbarTimeoutRef.current) clearTimeout(snackbarTimeoutRef.current)
+      // snackbarTimeoutRef.current = setTimeout(() => {
+      //   setOpenSnackbar(false)
+      // }, 2000)
       return
     }
 
-    setDepth(newDepth)
-    searchParams.set('depth', e.target.value)
-    setSearchParams(searchParams)
+    if (isFull === false) {
+      fetchFilteredLineage(nodeType, namespace, name, requestedDepth)
 
-    if (namespace && name) {
-      try {
-        const response = await getLineage(nodeType, namespace, name, newDepth)
+    } else {
+      fetchLineage(nodeType, namespace, name, requestedDepth, true)
 
-        if (Array.isArray(response.graph)) {
-          const totalObjects = response.graph.length
-
-          if (prevObjectsCount !== null && prevObjectsCount === totalObjects) {
-            const newMaxDepth = prevDepth || newDepth
-
-            setDepth(newMaxDepth)
-            searchParams.set('depth', newMaxDepth.toString())
-            setSearchParams(searchParams)
-
-            setMaxDepth(newMaxDepth)
-            localStorage.setItem('maxDepth', newMaxDepth.toString())
-            setOpenSnackbar(true)
-          }
-
-          setPrevObjectsCount(totalObjects)
-          setPrevDepth(newDepth)
-        } else {
-          return
-        }
-      } catch (error) {
-        return
-      }
     }
 
-    setLoading(false)
-    trackEvent('ActionBar', 'Change Depth', newDepth.toString())
-  }
-
-  const handleCloseSnackbar = () => {
-    setOpenSnackbar(false)
-  }
-
-  const handleAllDependenciesToggle = (checked: boolean) => {
-    setIsFull(checked)
-    searchParams.set('isFull', checked.toString())
+    setDepth(requestedDepth)
+    searchParams.set('depth', requestedDepth.toString())
     setSearchParams(searchParams)
-    trackEvent('ActionBar', 'Toggle All Dependencies', checked.toString())
   }
 
-  const handleHideColumnNamesToggle = (checked: boolean) => {
+  // const handleCloseSnackbar = useCallback(() => {
+  //   setOpenSnackbar(false)
+  //   if (snackbarTimeoutRef.current) {
+  //     clearTimeout(snackbarTimeoutRef.current)
+  //     snackbarTimeoutRef.current = null
+  //   }
+  // }, [])
+
+  const handleAllDependenciesToggle = useCallback(
+    (checked: boolean) => {
+      setIsFull(checked)
+      searchParams.set('isFull', checked.toString())
+      setSearchParams(searchParams)
+    },
+    [setIsFull, searchParams, setSearchParams]
+  )
+
+  const handleHideColumnNamesToggle = useCallback((checked: boolean) => {
     setIsCompact(checked)
     searchParams.set('isCompact', checked.toString())
     setSearchParams(searchParams)
     trackEvent('ActionBar', 'Toggle Hide Column Names', checked.toString())
-  }
+  }, [setIsCompact, searchParams, setSearchParams])
+
   return (
     <Box
       sx={{
@@ -216,7 +212,7 @@ export const ActionBar = ({
           </IconButton>
         </MQTooltip>
         <MQTooltip title={'Select the number of levels to display in the lineage'}>
-          {loading ? (
+          {loading || isLoading === true ? (
             <CircularProgress size={40} sx={{ width: '80px', mr: 2 }} />
           ) : (
             <TextField
@@ -240,8 +236,7 @@ export const ActionBar = ({
               control={
                 <Switch
                   size={'small'}
-                  value={isFull}
-                  defaultChecked={searchParams.get('isFull') === 'true'}
+                  checked={isFull}
                   onChange={(_, checked) => handleAllDependenciesToggle(checked)}
                 />
               }
@@ -263,16 +258,16 @@ export const ActionBar = ({
           </MQTooltip>
         </Box>
       </Box>
-      <Snackbar open={openSnackbar} autoHideDuration={1500} onClose={handleCloseSnackbar}>
+      {/* <Snackbar open={openSnackbar}  onClose={handleCloseSnackbar}>
         <Alert
           onClose={handleCloseSnackbar}
           severity='info'
           variant='filled'
           sx={{ width: '100%', backgroundColor: '#FFFFFF', color: '#191E26' }}
         >
-          You’ve reached the maximum depth.
+          {snackbarMessage}
         </Alert>
-      </Snackbar>
+      </Snackbar> */}
     </Box>
   )
 }

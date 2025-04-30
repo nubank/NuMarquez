@@ -74,36 +74,27 @@ export const createElkNodes = (
   isFull: boolean,
   collapsedNodes: Nullable<string>
 ) => {
-  const downstreamNodes = findDownstreamNodes(lineageGraph, currentGraphNode)
-  const upstreamNodes = findUpstreamNodes(lineageGraph, currentGraphNode)
-
   const nodes: ElkNode<JobOrDataset, TableLevelNodeData>[] = []
   const edges: Edge[] = []
 
   const collapsedNodesAsArray = collapsedNodes?.split(',')
 
-  const filteredGraph = lineageGraph.graph.filter((node) => {
-    if (isFull) return true
-    return (
-      downstreamNodes.includes(node) || upstreamNodes.includes(node) || node.id === currentGraphNode
-    )
-  })
+  const downstreamNodes = isFull ? findDownstreamNodes(lineageGraph, currentGraphNode) : []
+  const upstreamNodes = isFull ? findUpstreamNodes(lineageGraph, currentGraphNode) : []
 
-  for (const node of filteredGraph) {
+  for (const node of lineageGraph.graph) {
     edges.push(
-      ...node.outEdges
-        .filter((edge) => filteredGraph.find((n) => n.id === edge.destination))
-        .map((edge) => {
-          return {
-            id: `${edge.origin}:${edge.destination}`,
-            sourceNodeId: edge.origin,
-            targetNodeId: edge.destination,
-            color:
-              downstreamNodes.includes(node) || upstreamNodes.includes(node)
-                ? theme.palette.primary.main
-                : theme.palette.grey[400],
-          }
-        })
+      ...node.outEdges.map((edge) => ({
+        id: `${edge.origin}:${edge.destination}`,
+        sourceNodeId: edge.origin,
+        targetNodeId: edge.destination,
+        color: isFull
+          ? downstreamNodes.some((n) => n.id === edge.destination) ||
+            upstreamNodes.some((n) => n.id === edge.origin)
+            ? theme.palette.primary.main 
+            : theme.palette.grey[400] 
+          : theme.palette.primary.main, // always green in filtered mode
+      }))
     )
 
     if (node.type === 'JOB') {
@@ -130,5 +121,6 @@ export const createElkNodes = (
       })
     }
   }
+
   return { nodes, edges }
 }
