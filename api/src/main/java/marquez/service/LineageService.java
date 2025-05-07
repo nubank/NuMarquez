@@ -68,7 +68,6 @@ public class LineageService extends DelegatingLineageDao {
   // TODO make input parameters easily extendable if adding more options like
   // 'withJobFacets'
   public Lineage lineage(NodeId nodeId, int depth) {
-    log.debug("Attempting to get lineage for node '{}' with depth '{}'", nodeId.getValue(), depth);
     Optional<UUID> optionalUUID = getJobUuid(nodeId);
     if (optionalUUID.isEmpty()) {
       log.warn(
@@ -77,7 +76,6 @@ public class LineageService extends DelegatingLineageDao {
       return toLineageWithOrphanDataset(nodeId.asDatasetId());
     }
     UUID job = optionalUUID.get();
-    log.debug("Attempting to get lineage for job '{}'", job);
     Set<JobData> jobData = getLineage(Collections.singleton(job), depth);
 
     // Ensure job data is not empty, an empty set cannot be passed to
@@ -310,7 +308,6 @@ public class LineageService extends DelegatingLineageDao {
    */
   public Lineage directLineage(NodeId nodeId, int depth) {
     depth += 1;
-    log.debug("Attempting to get lineage for node '{}' with depth '{}'", nodeId.getValue(), depth);
     Optional<UUID> optionalUUID = getJobUuid(nodeId);
     if (optionalUUID.isEmpty()) {
         log.warn("Failed to get job for node '{}', returning orphan dataset...", nodeId.getValue());
@@ -357,14 +354,12 @@ public class LineageService extends DelegatingLineageDao {
                 if (jd.getInputUuids().contains(dsUuid)) {
                     Set<UUID> upstreamJobs = getUpstreamJobs(ds);
                     nextJobs.addAll(upstreamJobs);
-                    log.debug("Found upstream jobs for dataset {}: {}", ds.getName(), upstreamJobs);
                 }
 
                 // Follow downstream (jobs consuming this dataset)
                 if (jd.getOutputUuids().contains(dsUuid)) {
                     Set<UUID> downstreamJobs = getDownstreamJobs(ds);
                     nextJobs.addAll(downstreamJobs);
-                    log.debug("Found downstream jobs for dataset {}: {}", ds.getName(), downstreamJobs);
                 }
             }
         }
@@ -406,13 +401,7 @@ public class LineageService extends DelegatingLineageDao {
         }
     }
 
-    log.info("Collected upstream jobs: {}", allJobData.stream()
-        .flatMap(jd -> jd.getInputUuids().stream())
-        .collect(Collectors.toSet()));
 
-    log.info("Collected downstream jobs: {}", allJobData.stream()
-        .flatMap(jd -> jd.getOutputUuids().stream())
-        .collect(Collectors.toSet()));
 
     return toLineage(allJobData, datasets);
   }
