@@ -25,6 +25,7 @@ import marquez.service.models.DatasetData;
 import marquez.service.models.JobData;
 import marquez.service.models.Run;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
+import org.jdbi.v3.sqlobject.customizer.Bind;
 import org.jdbi.v3.sqlobject.customizer.BindList;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 
@@ -282,4 +283,17 @@ public interface LineageDao {
   default Set<JobData> getDirectLineage(@BindList Set<UUID> jobIds, int depth) {
     throw new UnsupportedOperationException("Use getDirectLineage and iterate in LineageService.");
   }
+
+    @SqlQuery("""
+    SELECT DISTINCT j.uuid
+    FROM jobs j
+    INNER JOIN job_versions jv ON jv.job_uuid = j.uuid
+    INNER JOIN job_versions_io_mapping io ON io.job_version_uuid = jv.uuid
+    INNER JOIN datasets_view ds ON ds.uuid = io.dataset_uuid
+    WHERE ds.name = :datasetName 
+      AND ds.namespace_name = :namespaceName
+      AND io.io_type = 'INPUT'
+""")
+  Set<UUID> getDownstreamJobs(@Bind("namespaceName") String namespaceName, @Bind("datasetName") String datasetName);
+
 }

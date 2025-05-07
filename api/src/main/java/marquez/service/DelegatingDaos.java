@@ -91,7 +91,8 @@ public class DelegatingDaos {
 
   @RequiredArgsConstructor
   public static class DelegatingLineageDao implements LineageDao {
-    @Delegate private final LineageDao delegate;
+    @Delegate
+    protected final LineageDao delegate;
   }
 
   @RequiredArgsConstructor
