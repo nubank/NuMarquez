@@ -25,7 +25,6 @@ import marquez.service.models.DatasetData;
 import marquez.service.models.JobData;
 import marquez.service.models.Run;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
-import org.jdbi.v3.sqlobject.customizer.Bind;
 import org.jdbi.v3.sqlobject.customizer.BindList;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 
@@ -285,49 +284,45 @@ public interface LineageDao {
     throw new UnsupportedOperationException("Use getDirectLineage and iterate in LineageService.");
   }
 
-  /**
-   * Checks if the requested depth is possible for the given node.
-   * Returns true if the lineage can reach at least the requested depth.
-   *
-   * @param jobId          The UUID of the starting job
-   * @param requestedDepth The depth we want to validate
-   * @return true if the requested depth is reachable
-   */
+  // Updated getDirectUpstreamJobs query
   @SqlQuery("""
-          WITH RECURSIVE lineage_depth AS (
-              -- Base case: start with the given job
-              SELECT
-                  job_uuid,
-                  job_symlink_target_uuid,
-                  0 as depth
-              FROM job_versions_io_mapping
-              WHERE (job_uuid = :jobId OR job_symlink_target_uuid = :jobId)
-              AND is_current_job_version = TRUE
-
-              UNION
-
-              SELECT
-                  io.job_uuid,
-                  io.job_symlink_target_uuid,
-                  ld.depth + 1
-              FROM lineage_depth ld
-              JOIN job_versions_io_mapping io ON (
-                  EXISTS (
-                      SELECT 1
-                      FROM job_versions_io_mapping io1
-                      WHERE (io1.job_uuid = ld.job_uuid OR io1.job_symlink_target_uuid = ld.job_uuid)
-                      AND io1.dataset_uuid = io.dataset_uuid
-                      AND io1.is_current_job_version = TRUE
-                  )
-              )
-              WHERE io.is_current_job_version = TRUE
-              AND io.job_uuid != ld.job_uuid  -- Avoid cycles
-              AND ld.depth < :requestedDepth  -- Stop when we reach requested depth
-          )
-          SELECT EXISTS (
-              SELECT 1 FROM lineage_depth
-              WHERE depth = :requestedDepth - 1
-          ) as depth_possible
+      WITH
+        -- Datasets que são INPUT para os jobs de interesse
+        input_datasets AS (
+          SELECT DISTINCT
+            dataset_uuid
+          FROM job_versions_io_mapping io
+          WHERE (job_uuid IN (<jobIds>) OR job_symlink_target_uuid IN (<jobIds>))
+            AND io_type = 'INPUT'
+            AND is_current_job_version = TRUE
+        ),
+        -- Jobs que têm esses datasets como OUTPUT (produtores diretos)
+        producer_jobs AS (
+          SELECT DISTINCT
+            j.uuid AS job_uuid
+          FROM job_versions_io_mapping io
+          INNER JOIN jobs j ON (j.uuid = io.job_uuid OR j.uuid = io.job_symlink_target_uuid)
+          INNER JOIN input_datasets d ON d.dataset_uuid = io.dataset_uuid
+          WHERE io_type = 'OUTPUT'
+            AND is_current_job_version = TRUE
+        )
+        -- Obter todos os dados dos jobs produtores
+        SELECT DISTINCT j.*,
+          job_io.inputs AS input_uuids,
+          job_io.outputs AS output_uuids
+        FROM (
+          SELECT
+            job_uuid AS job_uuid,
+            job_symlink_target_uuid AS job_symlink_target_uuid,
+            ARRAY_AGG(DISTINCT dataset_uuid) FILTER (WHERE io_type='INPUT') AS inputs,
+            ARRAY_AGG(DISTINCT dataset_uuid) FILTER (WHERE io_type='OUTPUT') AS outputs
+          FROM job_versions_io_mapping
+          WHERE is_current_job_version = TRUE
+          GROUP BY job_symlink_target_uuid, job_uuid
+        ) job_io
+        INNER JOIN jobs_view j
+          ON (j.uuid = job_io.job_uuid OR j.uuid = job_io.job_symlink_target_uuid)
+        WHERE j.uuid IN (SELECT job_uuid FROM producer_jobs)
       """)
-  boolean isDepthPossible(@Bind("jobId") UUID jobId, @Bind("requestedDepth") int requestedDepth);
+  Set<JobData> getDirectUpstreamJobs(@BindList Set<UUID> jobIds);
 }

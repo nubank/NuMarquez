@@ -47,6 +47,9 @@ services:
     tty: true
     depends_on:
       - numarquez
+      - redis
+      - zookeeper
+      - kafka
     networks:
       - marquez-network
     extra_hosts:
@@ -75,7 +78,6 @@ services:
       - marquez-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
-
     # Optional persistence
     volumes:
       - redis-data:/data
@@ -87,6 +89,8 @@ services:
       - "2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
+    depends_on:
+      - redis
     networks:
       - marquez-network
     extra_hosts:
