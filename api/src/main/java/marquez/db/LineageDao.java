@@ -2,8 +2,7 @@
  * Copyright 2018-2023 contributors to the Marquez project
  * SPDX-License-Identifier: Apache-2.0
  */
-
- package marquez.db;
+package marquez.db;
 
  import java.time.Instant;
  import java.util.Collection;
@@ -25,6 +24,7 @@
  import marquez.service.models.JobData;
  import marquez.service.models.Run;
  import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
+ import org.jdbi.v3.sqlobject.customizer.Bind;
  import org.jdbi.v3.sqlobject.customizer.BindList;
  import org.jdbi.v3.sqlobject.statement.SqlQuery;
  
@@ -191,25 +191,24 @@
    List<Run> getCurrentRuns(@BindList Collection<UUID> jobUuid);
  
    @SqlQuery("""
-       WITH RECURSIVE
-         upstream_runs(
-                 r_uuid, -- run uuid
-                 dataset_uuid, dataset_version_uuid, dataset_namespace, dataset_name, -- input dataset version to the run
-                 u_r_uuid, -- upstream run that produced that dataset version
-                 depth -- current depth of traversal
-                 ) AS (
- 
-           -- initial case: find the inputs of the initial runs
-           select r.uuid,
-                  dv.dataset_uuid, dv."version", dv.namespace_name, dv.dataset_name,
-                  dv.run_uuid,
-                  0 AS depth -- starts at 0
-           FROM (SELECT :runId::uuid AS uuid) r -- initial run
-           LEFT JOIN runs_input_mapping rim ON rim.run_uuid = r.uuid
-           LEFT JOIN dataset_versions dv ON dv.uuid = rim.dataset_version_uuid
- 
-         UNION
- 
+    WITH RECURSIVE
+      upstream_runs(
+              r_uuid, -- run uuid
+              dataset_uuid, dataset_version_uuid, dataset_namespace, dataset_name, -- input dataset version to the run
+              u_r_uuid, -- upstream run that produced that dataset version
+              depth -- current depth of traversal
+              ) AS (
+        -- initial case: find the inputs of the initial runs
+        select r.uuid,
+               dv.dataset_uuid, dv."version", dv.namespace_name, dv.dataset_name,
+               dv.run_uuid,
+               0 AS depth -- starts at 0
+        FROM (SELECT :runId::uuid AS uuid) r -- initial run
+        LEFT JOIN runs_input_mapping rim ON rim.run_uuid = r.uuid
+        LEFT JOIN dataset_versions dv ON dv.uuid = rim.dataset_version_uuid
+
+      UNION
+
            -- recursion: find the inputs of the inputs found on the previous iteration and increase depth to know when to stop
            SELECT
                  ur.u_r_uuid,
