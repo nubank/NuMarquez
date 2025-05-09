@@ -237,6 +237,7 @@ public interface LineageDao {
       """)
   List<UpstreamRunRow> getUpstreamRuns(@NotNull UUID runId, int depth);
 
+
   /**
    * Fetch all of the jobs that consume or produce the datasets that are consumed
    * or produced by the
@@ -245,8 +246,9 @@ public interface LineageDao {
    * no input or output datasets will have no results. Jobs that have no upstream
    * producers or
    * downstream consumers will have the original jobIds returned.
+   * 
    * @param jobIds
-   * @return 
+   * @return
    */
   @SqlQuery("""
       SELECT DISTINCT j.*,
@@ -284,16 +286,128 @@ public interface LineageDao {
     throw new UnsupportedOperationException("Use getDirectLineage and iterate in LineageService.");
   }
 
-    @SqlQuery("""
-    SELECT DISTINCT j.uuid
-    FROM jobs j
-    INNER JOIN job_versions jv ON jv.job_uuid = j.uuid
-    INNER JOIN job_versions_io_mapping io ON io.job_version_uuid = jv.uuid
-    INNER JOIN datasets_view ds ON ds.uuid = io.dataset_uuid
-    WHERE ds.name = :datasetName 
-      AND ds.namespace_name = :namespaceName
-      AND io.io_type = 'INPUT'
-""")
-  Set<UUID> getDownstreamJobs(@Bind("namespaceName") String namespaceName, @Bind("datasetName") String datasetName);
+  /**
+   * Fetch all of the jobs that consume or produce the datasets that are consumed
+   * or produced by the
+   * input jobIds. This returns a single layer from the BFS using datasets as
+   * edges. Jobs that have
+   * no input or output datasets will have no results. Jobs that have no upstream
+   * producers or
+   * downstream consumers will have the original jobIds returned.
+   *
+   * @param jobIds
+   * @return
+   */
+  @SqlQuery("""
+      WITH
+        -- Datasets que são INPUT para os jobs de interesse
+        input_datasets AS (
+          SELECT DISTINCT
+            dataset_uuid
+          FROM job_versions_io_mapping io
+          WHERE (job_uuid IN (<jobIds>) OR job_symlink_target_uuid IN (<jobIds>))
+            AND io_type = 'INPUT'
+            AND is_current_job_version = TRUE
+        ),
+        -- Jobs que têm esses datasets como OUTPUT (produtores diretos)
+        producer_jobs AS (
+          SELECT DISTINCT
+            j.uuid AS job_uuid
+          FROM job_versions_io_mapping io
+          INNER JOIN jobs j ON (j.uuid = io.job_uuid OR j.uuid = io.job_symlink_target_uuid)
+          INNER JOIN input_datasets d ON d.dataset_uuid = io.dataset_uuid
+          WHERE io_type = 'OUTPUT'
+            AND is_current_job_version = TRUE
+        )
+        -- Obter todos os dados dos jobs produtores
+        SELECT DISTINCT j.*,
+          job_io.inputs AS input_uuids,
+          job_io.outputs AS output_uuids
+        FROM (
+          SELECT
+            job_uuid AS job_uuid,
+            job_symlink_target_uuid AS job_symlink_target_uuid,
+            ARRAY_AGG(DISTINCT dataset_uuid) FILTER (WHERE io_type='INPUT') AS inputs,
+            ARRAY_AGG(DISTINCT dataset_uuid) FILTER (WHERE io_type='OUTPUT') AS outputs
+          FROM job_versions_io_mapping
+          WHERE is_current_job_version = TRUE
+          GROUP BY job_symlink_target_uuid, job_uuid
+        ) job_io
+        INNER JOIN jobs_view j
+          ON (j.uuid = job_io.job_uuid OR j.uuid = job_io.job_symlink_target_uuid)
+        WHERE j.uuid IN (SELECT job_uuid FROM producer_jobs)
+      """)
+  Set<JobData> getDirectUpstreamJobs(@BindList Set<UUID> jobIds);
 
+  /**
+   * Fetch all of the jobs that consume or produce the datasets that are consumed
+   * or produced by the
+   * input jobIds. This returns a single layer from the BFS using datasets as
+   * edges. Jobs that have
+   * no input or output datasets will have no results. Jobs that have no upstream
+   * producers or
+   * downstream consumers will have the original jobIds returned.
+   *
+   * @param jobIds
+   * @return
+   */
+  @SqlQuery("""
+    WITH
+      -- Datasets que são OUTPUT para os jobs de interesse
+      output_datasets AS (
+        SELECT DISTINCT
+          dataset_uuid
+        FROM job_versions_io_mapping io
+        WHERE (job_uuid IN (<jobIds>) OR job_symlink_target_uuid IN (<jobIds>))
+          AND io_type = 'OUTPUT'
+          AND is_current_job_version = TRUE
+      ),
+      -- Jobs que têm esses datasets como INPUT (consumidores diretos)
+      consumer_jobs AS (
+        SELECT DISTINCT
+          j.uuid AS job_uuid
+        FROM job_versions_io_mapping io
+        INNER JOIN jobs j ON (j.uuid = io.job_uuid OR j.uuid = io.job_symlink_target_uuid)
+        INNER JOIN output_datasets d ON d.dataset_uuid = io.dataset_uuid
+        WHERE io_type = 'INPUT'
+          AND is_current_job_version = TRUE
+      ),
+      -- Identificando os datasets diretamente conectados
+      direct_links AS (
+        SELECT DISTINCT
+          j.uuid AS job_uuid,
+          io_d.dataset_uuid
+        FROM jobs j
+        INNER JOIN job_versions_io_mapping io_d 
+          ON (j.uuid = io_d.job_uuid OR j.uuid = io_d.job_symlink_target_uuid)
+        INNER JOIN output_datasets d ON d.dataset_uuid = io_d.dataset_uuid
+        WHERE io_d.io_type = 'INPUT'
+          AND io_d.is_current_job_version = TRUE
+          AND j.uuid IN (SELECT job_uuid FROM consumer_jobs)
+      ),
+      -- Agregação dos inputs/outputs por job, mas apenas os diretamente conectados
+      job_io_agg AS (
+        SELECT
+          j.uuid AS job_uuid,
+          j.symlink_target_uuid AS job_symlink_target_uuid,
+          ARRAY_AGG(DISTINCT io.dataset_uuid) FILTER (WHERE io.io_type='INPUT' AND 
+            (j.uuid, io.dataset_uuid) IN (SELECT job_uuid, dataset_uuid FROM direct_links)) AS inputs,
+          ARRAY_AGG(DISTINCT io.dataset_uuid) FILTER (WHERE io.io_type='OUTPUT') AS outputs
+        FROM jobs j
+        INNER JOIN job_versions_io_mapping io 
+          ON (j.uuid = io.job_uuid OR j.uuid = io.job_symlink_target_uuid)
+        WHERE io.is_current_job_version = TRUE
+          AND j.uuid IN (SELECT job_uuid FROM consumer_jobs)
+        GROUP BY j.uuid, j.symlink_target_uuid
+      )
+      -- Obter todos os dados dos jobs consumidores com apenas os inputs diretamente conectados
+      SELECT DISTINCT ON (j.uuid) j.*,
+        job_io.inputs AS input_uuids,
+        job_io.outputs AS output_uuids
+      FROM job_io_agg job_io
+      INNER JOIN jobs_view j
+        ON (j.uuid = job_io.job_uuid OR j.uuid = job_io.job_symlink_target_uuid)
+      WHERE j.uuid IN (SELECT job_uuid FROM consumer_jobs)
+    """)
+  Set<JobData> getDirectDownstreamJobs(@BindList Set<UUID> jobIds);
 }
