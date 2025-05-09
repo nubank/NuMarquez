@@ -303,8 +303,8 @@ public class LineageService extends DelegatingLineageDao {
   }
 
   /**
-   * Método helper para buscar jobs que são produtores DIRETOS dos datasets de
-   * entrada.
+   * Método auxiliar para buscar jobs que são produtores ou consumidores
+   * DIRETOS dos datasets de entrada.
    * Realiza a iteração em níveis até o máximo de profundidade especificado.
    *
    * @param initialJobIds conjunto com os ID(s) de job inicial(is)
