@@ -132,30 +132,33 @@ public class LineageService extends DelegatingLineageDao {
 
   private Lineage toLineage(Set<JobData> jobData, Set<DatasetData> datasets) {
     Set<Node> nodes = new LinkedHashSet<>();
-    // build mapping for later
+
+    // Build mapping for later
     Map<UUID, DatasetData> datasetById = datasets.stream()
         .collect(Collectors.toMap(DatasetData::getUuid, Functions.identity()));
 
     Map<DatasetData, Set<UUID>> dsInputToJob = new HashMap<>();
     Map<DatasetData, Set<UUID>> dsOutputToJob = new HashMap<>();
-    // build jobs
-    Map<UUID, JobData> jobDataMap = Maps.uniqueIndex(jobData, JobData::getUuid);
+
+    // Build jobs map (deduplicated)
+    Map<UUID, JobData> jobDataMap = jobData.stream()
+        .collect(Collectors.toMap(
+            JobData::getUuid,
+            job -> job,
+            (existing, replacement) -> existing));
+
+    // Process each JobData (using 'data' as the declared variable)
     for (JobData data : jobData) {
-      if (data == null) {
-        log.error("Could not find job node for {}", jobData);
-        continue;
-      }
-
       Optional<JobData> parentJobData = getParentJobData(data.getParentJobUuid());
-      parentJobData.ifPresent(
-          parent -> {
-            log.debug(
-                "child: {}, parent: {} with UUID: {}",
-                parent.getId().getName(),
-                data.getParentJobName(),
-                data);
-          });
+      parentJobData.ifPresent(parent -> { 
+        log.debug(
+            "child: {}, parent: {} with UUID: {}",
+            parent.getId().getName(),
+            data.getParentJobName(),
+            data);
+      });
 
+      // Map job input and output UUIDs to their corresponding DatasetData objects
       Set<DatasetData> inputs = data.getInputUuids().stream()
           .map(datasetById::get)
           .filter(Objects::nonNull)
@@ -164,33 +167,36 @@ public class LineageService extends DelegatingLineageDao {
           .map(datasetById::get)
           .filter(Objects::nonNull)
           .collect(Collectors.toSet());
+
+      // Update job data with resolved dataset IDs
       data.setInputs(buildDatasetId(inputs));
       data.setOutputs(buildDatasetId(outputs));
 
-      inputs.forEach(
-          ds -> dsInputToJob.computeIfAbsent(ds, e -> new HashSet<>()).add(data.getUuid()));
-      outputs.forEach(
-          ds -> dsOutputToJob.computeIfAbsent(ds, e -> new HashSet<>()).add(data.getUuid()));
+      // Build reverse mapping from DatasetData to JobData UUIDs
+      inputs.forEach(ds -> dsInputToJob.computeIfAbsent(ds, e -> new HashSet<>()).add(data.getUuid()));
+      outputs.forEach(ds -> dsOutputToJob.computeIfAbsent(ds, e -> new HashSet<>()).add(data.getUuid()));
 
+      // Create a Node for the job
       NodeId origin = NodeId.of(new JobId(data.getNamespace(), data.getName()));
-      Node node = new Node(
+      Node jobNode = new Node(
           origin,
           NodeType.JOB,
           data,
           buildDatasetEdge(inputs, origin),
           buildDatasetEdge(origin, outputs));
-      nodes.add(node);
+      nodes.add(jobNode);
     }
 
+    // Process each DatasetData to create dataset nodes that connect to jobs
     for (DatasetData dataset : datasets) {
       NodeId origin = NodeId.of(new DatasetId(dataset.getNamespace(), dataset.getName()));
-      Node node = new Node(
+      Node datasetNode = new Node(
           origin,
           NodeType.DATASET,
           dataset,
           buildJobEdge(dsOutputToJob.get(dataset), origin, jobDataMap),
           buildJobEdge(origin, dsInputToJob.get(dataset), jobDataMap));
-      nodes.add(node);
+      nodes.add(datasetNode);
     }
 
     return new Lineage(Lineage.withSortedNodes(Graph.directed().nodes(nodes).build()));
@@ -299,6 +305,116 @@ public class LineageService extends DelegatingLineageDao {
   }
 
   /**
+   * Método helper para buscar jobs que são consumidores DIRETOS dos datasets de
+   * saída.
+   * Realiza a iteração em níveis até o máximo de profundidade especificado.
+   *
+   * @param initialJobIds conjunto com os ID(s) de job inicial(is)
+   * @param maxDepth      profundidade máxima para busca
+   * @return conjunto com todos os JobData encontrados no sentido downstream
+   */
+  private Set<JobData> fetchDirectDownstreamJobs(Set<UUID> initialJobIds, int maxDepth) {
+    Map<UUID, JobData> allJobsMap = new HashMap<>();
+    Set<UUID> processedJobs = new HashSet<>();
+    Set<UUID> currentLevelJobs = new HashSet<>(initialJobIds);
+
+    // Add initial jobs to the map first (get job details for input jobs)
+    Set<JobData> initialJobs = getDirectLineage(currentLevelJobs);
+    for (JobData jobData : initialJobs) {
+      // Only add jobs that are in our initial set
+      if (initialJobIds.contains(jobData.getUuid())) {
+        allJobsMap.put(jobData.getUuid(), jobData);
+      }
+    }
+
+    // Now process the downstream jobs
+    for (int depth = 0; depth < maxDepth; depth++) {
+      log.debug("Processing depth {} for downstream lineage", depth);
+
+      // If there are no jobs to process at this level, we're done
+      if (currentLevelJobs.isEmpty()) {
+        break;
+      }
+
+      // Mark current jobs as processed
+      processedJobs.addAll(currentLevelJobs);
+
+      // Get direct consumer jobs
+      Set<JobData> directConsumerJobs = getDirectDownstreamJobs(currentLevelJobs);
+      Set<UUID> nextLevelJobs = new HashSet<>();
+      for (JobData jobData : directConsumerJobs) {
+        // Skip if we've already processed this job
+        if (!allJobsMap.containsKey(jobData.getUuid())) {
+          allJobsMap.put(jobData.getUuid(), jobData);
+          if (!processedJobs.contains(jobData.getUuid())) {
+            nextLevelJobs.add(jobData.getUuid());
+          }
+        }
+      }
+
+      // Prepare for the next level
+      currentLevelJobs = nextLevelJobs;
+    }
+
+    return new HashSet<>(allJobsMap.values());
+  }
+
+  /**
+   * Método helper para buscar jobs que são produtores DIRETOS dos datasets de
+   * entrada.
+   * Realiza a iteração em níveis até o máximo de profundidade especificado.
+   *
+   * @param initialJobIds conjunto com os ID(s) de job inicial(is)
+   * @param maxDepth      profundidade máxima para busca
+   * @return conjunto com todos os JobData encontrados
+   */
+  private Set<JobData> fetchDirectJobs(Set<UUID> initialJobIds, int maxDepth) {
+    Map<UUID, JobData> allJobsMap = new HashMap<>();
+    Set<UUID> processedJobs = new HashSet<>();
+    Set<UUID> currentLevelJobs = new HashSet<>(initialJobIds);
+
+    // Add initial jobs to the map first (get job details for input jobs)
+    Set<JobData> initialJobs = getDirectLineage(currentLevelJobs);
+    for (JobData jobData : initialJobs) {
+      // Only add jobs that are in our initial set
+      if (initialJobIds.contains(jobData.getUuid())) {
+        allJobsMap.put(jobData.getUuid(), jobData);
+      }
+    }
+
+    // Now process the upstream jobs
+    for (int depth = 0; depth < maxDepth; depth++) {
+      log.debug("Processing depth {} for upstream lineage", depth);
+
+      // If there are no jobs to process at this level, we're done
+      if (currentLevelJobs.isEmpty()) {
+        break;
+      }
+
+      // Mark current jobs as processed
+      processedJobs.addAll(currentLevelJobs);
+
+      // Busca os jobs produtores diretos
+      Set<JobData> directProducerJobs = getDirectUpstreamJobs(currentLevelJobs);
+      Set<UUID> nextLevelJobs = new HashSet<>();
+      for (JobData jobData : directProducerJobs) {
+        // Skip if we've already processed this job
+        if (!allJobsMap.containsKey(jobData.getUuid())) {
+          allJobsMap.put(jobData.getUuid(), jobData);
+          if (!processedJobs.contains(jobData.getUuid())) {
+            nextLevelJobs.add(jobData.getUuid());
+          }
+        }
+      }
+
+      // Prepara para o próximo nível
+      currentLevelJobs = nextLevelJobs;
+    }
+
+    return new HashSet<>(allJobsMap.values());
+  }
+
+  /**
    * Retrieves direct lineage information for a given node up to the specified
    * depth. If the node
    * corresponds to a dataset and no associated lineage is found, an orphan
@@ -318,83 +434,35 @@ public class LineageService extends DelegatingLineageDao {
     }
     UUID centralJobUuid = optionalUUID.get();
 
-    // Mapa para armazenar todos os jobs descobertos
-    Map<UUID, JobData> allJobsMap = new HashMap<>();
+    // Recupera os jobs upstream e downstream usando os métodos helper
+    Set<JobData> upstreamJobs = fetchDirectJobs(Collections.singleton(centralJobUuid), maxDepth);
+    Set<JobData> downstreamJobs = fetchDirectDownstreamJobs(Collections.singleton(centralJobUuid), maxDepth);
 
-    // Conjunto para armazenar todos os jobs processados
-    Set<UUID> processedJobs = new HashSet<>();
+    // Combina os resultados eliminando duplicatas
+    Set<JobData> allJobsData = new HashSet<>();
+    allJobsData.addAll(upstreamJobs);
+    allJobsData.addAll(downstreamJobs);
 
-    // Conjuntos para armazenar jobs de diferentes níveis
-    Set<UUID> currentLevelJobs = new HashSet<>(Collections.singleton(centralJobUuid));
-
-    // Obtém informações sobre o job central
-    Set<JobData> centralJobData = getDirectLineage(currentLevelJobs);
-    for (JobData jobData : centralJobData) {
-      allJobsMap.put(jobData.getUuid(), jobData);
-    }
-
-    // Navega nível por nível
-    for (int depth = 0; depth < maxDepth; depth++) {
-      log.debug("Processing depth {} for lineage of {}", depth, nodeId.getValue());
-
-      // Se não há mais jobs para processar neste nível, terminamos
-      if (currentLevelJobs.isEmpty()) {
-        break;
-      }
-
-      // Marca jobs atuais como processados
-      processedJobs.addAll(currentLevelJobs);
-
-      // Encontra jobs que são produtores DIRETOS dos datasets de entrada
-      // Este é o ponto-chave para evitar linhagem indireta!
-      Set<JobData> directProducerJobs = getDirectUpstreamJobs(currentLevelJobs);
-
-      // Filtro para evitar jobs já processados
-      Set<UUID> nextLevelJobs = new HashSet<>();
-      for (JobData jobData : directProducerJobs) {
-        // Adiciona ao resultado geral
-        allJobsMap.put(jobData.getUuid(), jobData);
-
-        // Se não foi processado, adiciona para o próximo nível
-        if (!processedJobs.contains(jobData.getUuid())) {
-          nextLevelJobs.add(jobData.getUuid());
-        }
-      }
-
-      // Prepara para o próximo nível
-      currentLevelJobs = nextLevelJobs;
-    }
-
-    // Converte o mapa para um conjunto
-    Set<JobData> allJobsData = new HashSet<>(allJobsMap.values());
-
-    // Se não encontramos nenhum job, retorna um grafo órfão
     if (allJobsData.isEmpty()) {
       return toLineageWithOrphanDataset(nodeId.asDatasetId());
     }
 
     // Adiciona informações de execução a cada job
     for (JobData jobData : allJobsData) {
-      runDao.findRunByUuid(jobData.getCurrentRunUuid())
-          .ifPresent(jobData::setLatestRun);
+      runDao.findRunByUuid(jobData.getCurrentRunUuid()).ifPresent(jobData::setLatestRun);
     }
 
-    // Coleta todos os datasets relacionados aos jobs
     Set<UUID> allDatasetIds = allJobsData.stream()
         .flatMap(jd -> Stream.concat(jd.getInputUuids().stream(), jd.getOutputUuids().stream()))
         .collect(Collectors.toSet());
 
-    // Obtém detalhes de todos os datasets
-    Set<DatasetData> allDatasets = allDatasetIds.isEmpty() ? new HashSet<>()
+    Set<DatasetData> allDatasets = allDatasetIds.isEmpty()
+        ? new HashSet<>()
         : new HashSet<>(getDatasetData(allDatasetIds));
 
-    // Verifica a integridade do nó inicial se for um dataset
     if (nodeId.isDatasetType()) {
       DatasetId datasetId = nodeId.asDatasetId();
-      DatasetData datasetData = getDatasetData(
-          datasetId.getNamespace().getValue(),
-          datasetId.getName().getValue());
-
+      DatasetData datasetData = getDatasetData(datasetId.getNamespace().getValue(), datasetId.getName().getValue());
       if (!allDatasetIds.contains(datasetData.getUuid())) {
         log.warn(
             "Found jobs {} which no longer share lineage with dataset '{}' - discarding",
