@@ -212,15 +212,38 @@ public interface DatasetFieldDao extends BaseDao {
   List<Pair<UUID, Instant>> findDatasetVersionFieldsUuids(String fieldName, UUID datasetVersion);
 
   @SqlQuery(
-      "SELECT f.*, "
-          + "ARRAY(SELECT t.name "
-          + "      FROM dataset_fields_tag_mapping m "
-          + "      INNER JOIN tags t on t.uuid = m.tag_uuid "
-          + "      WHERE m.dataset_field_uuid = f.uuid) AS tags "
-          + "FROM dataset_fields f "
-          + "INNER JOIN dataset_versions_field_mapping fm on fm.dataset_field_uuid = f.uuid "
-          + "WHERE fm.dataset_version_uuid = :datasetVersionUuid")
+      """
+          WITH dataset_version_fields AS (
+              SELECT f.*
+              FROM dataset_fields f 
+              INNER JOIN dataset_versions_field_mapping fm ON fm.dataset_field_uuid = f.uuid 
+              WHERE fm.dataset_version_uuid = :datasetVersionUuid
+          )
+          SELECT 
+              f.*,
+              COALESCE(
+                  ARRAY_AGG(t.name) FILTER (WHERE t.name IS NOT NULL),
+                  ARRAY[]::VARCHAR[]
+              ) AS tags
+          FROM dataset_version_fields f
+          LEFT JOIN dataset_fields_tag_mapping m ON m.dataset_field_uuid = f.uuid
+          LEFT JOIN tags t ON t.uuid = m.tag_uuid
+          GROUP BY f.uuid, f.type, f.created_at, f.updated_at, f.dataset_uuid, f.name, f.description
+          """)
   List<Field> findByDatasetVersion(UUID datasetVersionUuid);
+
+  @SqlUpdate(
+      """
+          CREATE INDEX IF NOT EXISTS idx_dataset_versions_field_mapping_version_uuid 
+          ON dataset_versions_field_mapping(dataset_version_uuid);
+          
+          CREATE INDEX IF NOT EXISTS idx_dataset_fields_tag_mapping_field_uuid 
+          ON dataset_fields_tag_mapping(dataset_field_uuid);
+          
+          CREATE INDEX IF NOT EXISTS idx_tags_uuid 
+          ON tags(uuid);
+          """)
+  void createIndexesForFindByDatasetVersion();
 
   @SqlQuery(
       "SELECT f.*, "
