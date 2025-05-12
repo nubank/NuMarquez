@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableSortedSet;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet; 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -51,9 +52,41 @@ public class ColumnLineageService extends DelegatingDaos.DelegatingColumnLineage
       throw new NodeIdNotFoundException("Could not find node");
     }
 
-    return toLineage(
-        getLineage(depth, columnNodes.nodeIds, withDownstream, columnNodes.createdAtUntil),
-        nodeId.hasVersion());
+    Set<ColumnLineageNodeData> lineageNodeData = new HashSet<>();
+    Set<UUID> currentLevelFields = new HashSet<>(columnNodes.nodeIds);
+    Set<UUID> processedFields = new HashSet<>();
+    int currentDepth = 0;
+
+    while (!currentLevelFields.isEmpty() && currentDepth < depth) {
+      // Get direct lineage for current level fields
+      Set<ColumnLineageNodeData> directLineage = 
+          getDirectColumnLineage(new ArrayList<>(currentLevelFields), withDownstream, columnNodes.createdAtUntil);
+      
+      // Add to result set
+      lineageNodeData.addAll(directLineage);
+      
+      // Mark current fields as processed
+      processedFields.addAll(currentLevelFields);
+      
+      // Get next level fields to process
+      currentLevelFields.clear();
+      directLineage.forEach(node -> {
+        node.getInputFields().forEach(input -> {
+          UUID fieldUuid = datasetFieldDao.findUuid(
+              input.getNamespace(), 
+              input.getDataset(), 
+              input.getField())
+              .orElse(null);
+          if (fieldUuid != null && !processedFields.contains(fieldUuid)) {
+            currentLevelFields.add(fieldUuid);
+          }
+        });
+      });
+      
+      currentDepth++;
+    }
+
+    return toLineage(lineageNodeData, nodeId.hasVersion());
   }
 
   private Lineage toLineage(Set<ColumnLineageNodeData> lineageNodeData, boolean includeVersion) {
