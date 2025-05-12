@@ -240,4 +240,69 @@ public interface ColumnLineageDao extends BaseDao {
               propertyNames = {"left", "right"},
               value = "values")
           List<Pair<String, String>> datasets);
+
+  @SqlQuery(
+      """
+          WITH column_lineage_latest AS (
+              SELECT DISTINCT ON (output_dataset_field_uuid, input_dataset_field_uuid) *
+              FROM column_lineage
+              WHERE created_at <= :createdAtUntil
+              ORDER BY output_dataset_field_uuid, input_dataset_field_uuid, updated_at DESC, updated_at
+          ),
+          dataset_fields_view AS (
+            SELECT d.namespace_name as namespace_name, d.name as dataset_name, df.name as field_name, df.type, df.uuid, d.namespace_uuid
+            FROM dataset_fields df
+            INNER JOIN datasets_view d ON d.uuid = df.dataset_uuid
+          )
+          SELECT
+              output_fields.namespace_name,
+              output_fields.dataset_name,
+              output_fields.field_name,
+              output_fields.type,
+              ARRAY_AGG(DISTINCT ARRAY[
+                input_fields.namespace_name,
+                input_fields.dataset_name,
+                CAST(cl.input_dataset_version_uuid AS VARCHAR),
+                input_fields.field_name,
+                cl.transformation_description,
+                cl.transformation_type
+              ]) AS inputFields,
+              cl.output_dataset_version_uuid as dataset_version_uuid
+          FROM column_lineage_latest cl
+          INNER JOIN dataset_fields_view output_fields ON cl.output_dataset_field_uuid = output_fields.uuid
+          INNER JOIN dataset_symlinks ds_output ON ds_output.namespace_uuid = output_fields.namespace_uuid AND ds_output.name = output_fields.dataset_name
+          LEFT JOIN dataset_fields_view input_fields ON cl.input_dataset_field_uuid = input_fields.uuid
+          INNER JOIN dataset_symlinks ds_input ON ds_input.namespace_uuid = input_fields.namespace_uuid AND ds_input.name = input_fields.dataset_name
+          WHERE output_fields.uuid IN (<datasetFieldUuids>)
+            AND ds_output.is_primary is true 
+            AND ds_input.is_primary is true
+          GROUP BY
+              output_fields.namespace_name,
+              output_fields.dataset_name,
+              output_fields.field_name,
+              output_fields.type,
+              cl.output_dataset_version_uuid
+          """)
+  Set<ColumnLineageNodeData> getDirectColumnLineage(
+      @BindList(onEmpty = NULL_STRING) List<UUID> datasetFieldUuids,
+      boolean withDownstream,
+      Instant createdAtUntil);
+
+  /**
+   * Fetch all of the column lineage nodes that are directly connected to the input dataset fields.
+   * This returns a single layer of lineage using column lineage as edges. Fields that have
+   * no input or output lineage will have no results.
+   *
+   * @param datasetFieldUuids The UUIDs of the dataset fields to get lineage for
+   * @param withDownstream Whether to include downstream lineage
+   * @param createdAtUntil The point in time to get lineage for
+   * @return Set of ColumnLineageNodeData representing the direct lineage
+   */
+  default Set<ColumnLineageNodeData> getDirectColumnLineage(
+      @BindList(onEmpty = NULL_STRING) List<UUID> datasetFieldUuids,
+      boolean withDownstream,
+      Instant createdAtUntil,
+      int depth) {
+    throw new UnsupportedOperationException("Use getDirectColumnLineage and iterate in ColumnLineageService.");
+  }
 }
