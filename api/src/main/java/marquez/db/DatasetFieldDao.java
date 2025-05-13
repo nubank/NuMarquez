@@ -26,7 +26,8 @@
  import marquez.service.models.DatasetVersion;
  import org.apache.commons.lang3.tuple.Pair;
  import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
- import org.jdbi.v3.sqlobject.customizer.BindBean;
+import org.jdbi.v3.sqlobject.customizer.Bind;
+import org.jdbi.v3.sqlobject.customizer.BindBean;
  import org.jdbi.v3.sqlobject.statement.SqlBatch;
  import org.jdbi.v3.sqlobject.statement.SqlQuery;
  import org.jdbi.v3.sqlobject.statement.SqlUpdate;
@@ -155,15 +156,15 @@
        """)
    List<UUID> findDatasetFieldsUuids(String namespaceName, String datasetName);
  
-   @SqlQuery(
-       """
-           SELECT df.uuid, dv.created_at
-           FROM dataset_fields  df
-           JOIN dataset_versions_field_mapping AS fm ON fm.dataset_field_uuid = df.uuid
-           JOIN dataset_versions AS dv ON dv.uuid = :datasetVersion
-           WHERE fm.dataset_version_uuid = :datasetVersion
-       """)
-   List<Pair<UUID, Instant>> findDatasetVersionFieldsUuids(UUID datasetVersion);
+//    @SqlQuery(
+//        """
+//            SELECT df.uuid, dv.created_at
+//            FROM dataset_fields  df
+//            JOIN dataset_versions_field_mapping AS fm ON fm.dataset_field_uuid = df.uuid
+//            JOIN dataset_versions AS dv ON dv.uuid = :datasetVersion
+//            WHERE fm.dataset_version_uuid = :datasetVersion
+//        """)
+//    List<Pair<UUID, Instant>> findDatasetVersionFieldsUuids(UUID datasetVersion);
  
    @SqlQuery(
        """
@@ -190,15 +191,15 @@
        """)
    List<Pair<UUID, Instant>> findFieldsUuidsByJobVersion(UUID jobVersion);
  
-   @SqlQuery(
-       """
-           SELECT df.uuid
-           FROM dataset_fields  df
-           JOIN datasets_view AS d ON d.uuid = df.dataset_uuid
-           WHERE CAST((:namespaceName, :datasetName) AS DATASET_NAME) = ANY(d.dataset_symlinks)
-           AND df.name = :name
-       """)
-   Optional<UUID> findUuid(String namespaceName, String datasetName, String name);
+//    @SqlQuery(
+//        """
+//            SELECT df.uuid
+//            FROM dataset_fields  df
+//            JOIN datasets_view AS d ON d.uuid = df.dataset_uuid
+//            WHERE CAST((:namespaceName, :datasetName) AS DATASET_NAME) = ANY(d.dataset_symlinks)
+//            AND df.name = :name
+//        """)
+//    Optional<UUID> findUuid(String namespaceName, String datasetName, String name);
  
    @SqlQuery(
        """
@@ -293,5 +294,45 @@
      UUID tagUuid;
      Instant taggedAt;
    }
+ 
+   @SqlUpdate(
+       """
+           CREATE INDEX IF NOT EXISTS idx_dataset_fields_name_dataset_uuid 
+           ON dataset_fields(name, dataset_uuid);
+           
+           CREATE INDEX IF NOT EXISTS idx_dataset_versions_field_mapping_field_uuid 
+           ON dataset_versions_field_mapping(dataset_field_uuid);
+           """)
+   void createIndexesForDatasetFields();
+ 
+   @SqlQuery(
+       """
+           WITH dataset_symlinks_array AS (
+               SELECT d.uuid, d.dataset_symlinks
+               FROM datasets_view d
+               WHERE CAST((:namespaceName, :datasetName) AS DATASET_NAME) = ANY(d.dataset_symlinks)
+           )
+           SELECT df.uuid
+           FROM dataset_fields df
+           JOIN dataset_symlinks_array d ON d.uuid = df.dataset_uuid
+           WHERE df.name = :name
+           """)
+   Optional<UUID> findUuid(
+       @Bind("namespaceName") String namespaceName,
+       @Bind("datasetName") String datasetName,
+       @Bind("name") String name);
+ 
+   @SqlQuery(
+       """
+           WITH dataset_version_fields AS (
+               SELECT df.uuid, dv.created_at
+               FROM dataset_fields df
+               JOIN dataset_versions_field_mapping fm ON fm.dataset_field_uuid = df.uuid
+               WHERE fm.dataset_version_uuid = :datasetVersion
+           )
+           SELECT uuid, created_at
+           FROM dataset_version_fields
+           """)
+   List<Pair<UUID, Instant>> findDatasetVersionFieldsUuids(@Bind("datasetVersion") UUID datasetVersion);
  }
  

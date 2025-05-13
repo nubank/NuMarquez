@@ -1,0 +1,478 @@
+{
+    "graph": [
+        {
+            "id": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:card__id",
+            "type": "DATASET_FIELD",
+            "data": {
+                "namespace": "bank-account.core-infrastructure",
+                "dataset": "nu-br.core.credit-cards",
+                "datasetVersion": "244b91c1-11d2-47cd-b113-a10aeb008ed2",
+                "field": "card__id",
+                "fieldType": "string",
+                "transformationDescription": null,
+                "transformationType": null,
+                "inputFields": [
+                    {
+                        "namespace": "legacy.database-contract",
+                        "dataset": "contract-crebito.cards",
+                        "datasetVersion": "fe3bb6be-5272-4120-97ff-0b828c0ca37b",
+                        "field": "card__id",
+                        "transformationDescription": null,
+                        "transformationType": null
+                    },
+                    {
+                        "namespace": "legacy.database-contract",
+                        "dataset": "contract-credit-card-accounts.cards",
+                        "datasetVersion": "420db6dc-5b47-4a49-920e-164a2ade6cf7",
+                        "field": "card__id",
+                        "transformationDescription": null,
+                        "transformationType": null
+                    }
+                ]
+            },
+            "inEdges": [
+                {
+                    "origin": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:card__id",
+                    "destination": "datasetField:legacy.database-contract:contract-crebito.cards:card__id"
+                },
+                {
+                    "origin": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:card__id",
+                    "destination": "datasetField:legacy.database-contract:contract-credit-card-accounts.cards:card__id"
+                }
+            ],
+            "outEdges": [
+                {
+                    "origin": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:card__id",
+                    "destination": "datasetField:credit-card-foundations.credit-card-platforms:nu-br.dataset.credit-card-account-id-to-first-physical-credit-card-activation:v"
+                }
+            ]
+        },
+        {
+            "id": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:card_feature__activated_at",
+            "type": "DATASET_FIELD",
+            "data": {
+                "namespace": "bank-account.core-infrastructure",
+                "dataset": "nu-br.core.credit-cards",
+                "datasetVersion": "244b91c1-11d2-47cd-b113-a10aeb008ed2",
+                "field": "card_feature__activated_at",
+                "fieldType": "timestamp",
+                "transformationDescription": null,
+                "transformationType": null,
+                "inputFields": [
+                    {
+                        "namespace": "legacy.database-contract",
+                        "dataset": "contract-crebito.features",
+                        "datasetVersion": "1c553122-e7ab-4bfe-adb3-d7cda08d4192",
+                        "field": "feature__activated_at",
+                        "transformationDescription": null,
+                        "transformationType": null
+                    },
+                    {
+                        "namespace": "legacy.database-contract",
+                        "dataset": "contract-crebito.feature-status-history",
+                        "datasetVersion": "a58e2274-236a-4b36-9f21-6da61f47ac8b",
+                        "field": "db__tx_instant",
+                        "transformationDescription": null,
+                        "transformationType": null
+                    },
+                    {
+                        "namespace": "legacy.database-contract",
+                        "dataset": "contract-credit-card-accounts.card-status-history",
+                        "datasetVersion": "ca206fe8-01d4-4d93-b6ac-51374087008b",
+                        "field": "db__tx_instant",
+                        "transformationDescription": null,
+                        "transformationType": null
+                    }
+                ]
+            },
+            "inEdges": [
+                {
+                    "origin": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:card_feature__activated_at",
+                    "destination": "datasetField:legacy.database-contract:contract-crebito.feature-status-history:db__tx_instant"
+                },
+                {
+                    "origin": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:card_feature__activated_at",
+                    "destination": "datasetField:legacy.database-contract:contract-crebito.features:feature__activated_at"
+                },
+                {
+                    "origin": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:card_feature__activated_at",
+                    "destination": "datasetField:legacy.database-contract:contract-credit-card-accounts.card-status-history:db__tx_instant"
+                }
+            ],
+            "outEdges": [
+                {
+                    "origin": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:card_feature__activated_at",
+                    "destination": "datasetField:credit-card-foundations.credit-card-platforms:nu-br.dataset.credit-card-account-id-to-first-physical-credit-card-activation:t"
+                },
+                {
+                    "origin": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:card_feature__activated_at",
+                    "destination": "datasetField:credit-card-foundations.credit-card-platforms:nu-br.dataset.credit-card-account-id-to-first-physical-credit-card-activation:v"
+                }
+            ]
+        },
+        {
+            "id": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:credit_card_account__id",
+            "type": "DATASET_FIELD",
+            "data": {
+                "namespace": "bank-account.core-infrastructure",
+                "dataset": "nu-br.core.credit-cards",
+                "datasetVersion": "244b91c1-11d2-47cd-b113-a10aeb008ed2",
+                "field": "credit_card_account__id",
+                "fieldType": "string",
+                "transformationDescription": null,
+                "transformationType": null,
+                "inputFields": [
+                    {
+                        "namespace": "legacy.database-contract",
+                        "dataset": "contract-crebito.cards",
+                        "datasetVersion": "fe3bb6be-5272-4120-97ff-0b828c0ca37b",
+                        "field": "credit_account__id",
+                        "transformationDescription": null,
+                        "transformationType": null
+                    },
+                    {
+                        "namespace": "legacy.database-contract",
+                        "dataset": "contract-credit-card-accounts.accounts",
+                        "datasetVersion": "7c9324ea-0606-4324-80aa-614478ec8c9a",
+                        "field": "account__id",
+                        "transformationDescription": null,
+                        "transformationType": null
+                    }
+                ]
+            },
+            "inEdges": [
+                {
+                    "origin": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:credit_card_account__id",
+                    "destination": "datasetField:legacy.database-contract:contract-crebito.cards:credit_account__id"
+                },
+                {
+                    "origin": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:credit_card_account__id",
+                    "destination": "datasetField:legacy.database-contract:contract-credit-card-accounts.accounts:account__id"
+                }
+            ],
+            "outEdges": [
+                {
+                    "origin": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:credit_card_account__id",
+                    "destination": "datasetField:credit-card-foundations.credit-card-platforms:nu-br.dataset.credit-card-account-id-to-first-physical-credit-card-activation:e"
+                }
+            ]
+        },
+        {
+            "id": "datasetField:credit-card-foundations.credit-card-platforms:nu-br.dataset.credit-card-account-id-to-first-physical-credit-card-activation:e",
+            "type": "DATASET_FIELD",
+            "data": {
+                "namespace": "credit-card-foundations.credit-card-platforms",
+                "dataset": "nu-br.dataset.credit-card-account-id-to-first-physical-credit-card-activation",
+                "datasetVersion": "4b583fad-142f-42f6-9354-1be1903b4d2e",
+                "field": "e",
+                "fieldType": "string",
+                "transformationDescription": null,
+                "transformationType": null,
+                "inputFields": [
+                    {
+                        "namespace": "bank-account.core-infrastructure",
+                        "dataset": "nu-br.core.credit-cards",
+                        "datasetVersion": "244b91c1-11d2-47cd-b113-a10aeb008ed2",
+                        "field": "credit_card_account__id",
+                        "transformationDescription": null,
+                        "transformationType": null
+                    }
+                ]
+            },
+            "inEdges": [
+                {
+                    "origin": "datasetField:credit-card-foundations.credit-card-platforms:nu-br.dataset.credit-card-account-id-to-first-physical-credit-card-activation:e",
+                    "destination": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:credit_card_account__id"
+                }
+            ],
+            "outEdges": []
+        },
+        {
+            "id": "datasetField:credit-card-foundations.credit-card-platforms:nu-br.dataset.credit-card-account-id-to-first-physical-credit-card-activation:t",
+            "type": "DATASET_FIELD",
+            "data": {
+                "namespace": "credit-card-foundations.credit-card-platforms",
+                "dataset": "nu-br.dataset.credit-card-account-id-to-first-physical-credit-card-activation",
+                "datasetVersion": "4b583fad-142f-42f6-9354-1be1903b4d2e",
+                "field": "t",
+                "fieldType": "timestamp",
+                "transformationDescription": null,
+                "transformationType": null,
+                "inputFields": [
+                    {
+                        "namespace": "bank-account.core-infrastructure",
+                        "dataset": "nu-br.core.credit-cards",
+                        "datasetVersion": "244b91c1-11d2-47cd-b113-a10aeb008ed2",
+                        "field": "card_feature__activated_at",
+                        "transformationDescription": null,
+                        "transformationType": null
+                    }
+                ]
+            },
+            "inEdges": [
+                {
+                    "origin": "datasetField:credit-card-foundations.credit-card-platforms:nu-br.dataset.credit-card-account-id-to-first-physical-credit-card-activation:t",
+                    "destination": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:card_feature__activated_at"
+                }
+            ],
+            "outEdges": []
+        },
+        {
+            "id": "datasetField:credit-card-foundations.credit-card-platforms:nu-br.dataset.credit-card-account-id-to-first-physical-credit-card-activation:v",
+            "type": "DATASET_FIELD",
+            "data": {
+                "namespace": "credit-card-foundations.credit-card-platforms",
+                "dataset": "nu-br.dataset.credit-card-account-id-to-first-physical-credit-card-activation",
+                "datasetVersion": "4b583fad-142f-42f6-9354-1be1903b4d2e",
+                "field": "v",
+                "fieldType": "array",
+                "transformationDescription": null,
+                "transformationType": null,
+                "inputFields": [
+                    {
+                        "namespace": "bank-account.core-infrastructure",
+                        "dataset": "nu-br.core.credit-cards",
+                        "datasetVersion": "244b91c1-11d2-47cd-b113-a10aeb008ed2",
+                        "field": "card_feature__activated_at",
+                        "transformationDescription": null,
+                        "transformationType": null
+                    },
+                    {
+                        "namespace": "bank-account.core-infrastructure",
+                        "dataset": "nu-br.core.credit-cards",
+                        "datasetVersion": "244b91c1-11d2-47cd-b113-a10aeb008ed2",
+                        "field": "card__id",
+                        "transformationDescription": null,
+                        "transformationType": null
+                    },
+                    {
+                        "namespace": "legacy.database-contract",
+                        "dataset": "contract-sendman.card-tracking-status-history",
+                        "datasetVersion": "bf9032f0-bec3-45f9-9533-3931f0dfb51d",
+                        "field": "db__tx_instant",
+                        "transformationDescription": null,
+                        "transformationType": null
+                    }
+                ]
+            },
+            "inEdges": [
+                {
+                    "origin": "datasetField:credit-card-foundations.credit-card-platforms:nu-br.dataset.credit-card-account-id-to-first-physical-credit-card-activation:v",
+                    "destination": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:card__id"
+                },
+                {
+                    "origin": "datasetField:credit-card-foundations.credit-card-platforms:nu-br.dataset.credit-card-account-id-to-first-physical-credit-card-activation:v",
+                    "destination": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:card_feature__activated_at"
+                },
+                {
+                    "origin": "datasetField:credit-card-foundations.credit-card-platforms:nu-br.dataset.credit-card-account-id-to-first-physical-credit-card-activation:v",
+                    "destination": "datasetField:legacy.database-contract:contract-sendman.card-tracking-status-history:db__tx_instant"
+                }
+            ],
+            "outEdges": []
+        },
+        {
+            "id": "datasetField:legacy.database-contract:contract-crebito.cards:card__id",
+            "type": "DATASET_FIELD",
+            "data": {
+                "namespace": "legacy.database-contract",
+                "dataset": "contract-crebito.cards",
+                "datasetVersion": "fe3bb6be-5272-4120-97ff-0b828c0ca37b",
+                "field": "card__id",
+                "fieldType": "",
+                "transformationDescription": null,
+                "transformationType": null,
+                "inputFields": []
+            },
+            "inEdges": [],
+            "outEdges": [
+                {
+                    "origin": "datasetField:legacy.database-contract:contract-crebito.cards:card__id",
+                    "destination": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:card__id"
+                }
+            ]
+        },
+        {
+            "id": "datasetField:legacy.database-contract:contract-crebito.cards:credit_account__id",
+            "type": "DATASET_FIELD",
+            "data": {
+                "namespace": "legacy.database-contract",
+                "dataset": "contract-crebito.cards",
+                "datasetVersion": "fe3bb6be-5272-4120-97ff-0b828c0ca37b",
+                "field": "credit_account__id",
+                "fieldType": "",
+                "transformationDescription": null,
+                "transformationType": null,
+                "inputFields": []
+            },
+            "inEdges": [],
+            "outEdges": [
+                {
+                    "origin": "datasetField:legacy.database-contract:contract-crebito.cards:credit_account__id",
+                    "destination": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:credit_card_account__id"
+                }
+            ]
+        },
+        {
+            "id": "datasetField:legacy.database-contract:contract-crebito.feature-status-history:db__tx_instant",
+            "type": "DATASET_FIELD",
+            "data": {
+                "namespace": "legacy.database-contract",
+                "dataset": "contract-crebito.feature-status-history",
+                "datasetVersion": "a58e2274-236a-4b36-9f21-6da61f47ac8b",
+                "field": "db__tx_instant",
+                "fieldType": "",
+                "transformationDescription": null,
+                "transformationType": null,
+                "inputFields": []
+            },
+            "inEdges": [],
+            "outEdges": [
+                {
+                    "origin": "datasetField:legacy.database-contract:contract-crebito.feature-status-history:db__tx_instant",
+                    "destination": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:card_feature__activated_at"
+                }
+            ]
+        },
+        {
+            "id": "datasetField:legacy.database-contract:contract-crebito.features:feature__activated_at",
+            "type": "DATASET_FIELD",
+            "data": {
+                "namespace": "legacy.database-contract",
+                "dataset": "contract-crebito.features",
+                "datasetVersion": "1c553122-e7ab-4bfe-adb3-d7cda08d4192",
+                "field": "feature__activated_at",
+                "fieldType": "",
+                "transformationDescription": null,
+                "transformationType": null,
+                "inputFields": []
+            },
+            "inEdges": [],
+            "outEdges": [
+                {
+                    "origin": "datasetField:legacy.database-contract:contract-crebito.features:feature__activated_at",
+                    "destination": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:card_feature__activated_at"
+                }
+            ]
+        },
+        {
+            "id": "datasetField:legacy.database-contract:contract-credit-card-accounts.accounts:account__id",
+            "type": "DATASET_FIELD",
+            "data": {
+                "namespace": "legacy.database-contract",
+                "dataset": "contract-credit-card-accounts.accounts",
+                "datasetVersion": "7c9324ea-0606-4324-80aa-614478ec8c9a",
+                "field": "account__id",
+                "fieldType": "",
+                "transformationDescription": null,
+                "transformationType": null,
+                "inputFields": []
+            },
+            "inEdges": [],
+            "outEdges": [
+                {
+                    "origin": "datasetField:legacy.database-contract:contract-credit-card-accounts.accounts:account__id",
+                    "destination": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:credit_card_account__id"
+                }
+            ]
+        },
+        {
+            "id": "datasetField:legacy.database-contract:contract-credit-card-accounts.card-status-history:db__tx_instant",
+            "type": "DATASET_FIELD",
+            "data": {
+                "namespace": "legacy.database-contract",
+                "dataset": "contract-credit-card-accounts.card-status-history",
+                "datasetVersion": "ca206fe8-01d4-4d93-b6ac-51374087008b",
+                "field": "db__tx_instant",
+                "fieldType": "",
+                "transformationDescription": null,
+                "transformationType": null,
+                "inputFields": []
+            },
+            "inEdges": [],
+            "outEdges": [
+                {
+                    "origin": "datasetField:legacy.database-contract:contract-credit-card-accounts.card-status-history:db__tx_instant",
+                    "destination": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:card_feature__activated_at"
+                }
+            ]
+        },
+        {
+            "id": "datasetField:legacy.database-contract:contract-credit-card-accounts.cards:card__id",
+            "type": "DATASET_FIELD",
+            "data": {
+                "namespace": "legacy.database-contract",
+                "dataset": "contract-credit-card-accounts.cards",
+                "datasetVersion": "420db6dc-5b47-4a49-920e-164a2ade6cf7",
+                "field": "card__id",
+                "fieldType": "",
+                "transformationDescription": null,
+                "transformationType": null,
+                "inputFields": []
+            },
+            "inEdges": [],
+            "outEdges": [
+                {
+                    "origin": "datasetField:legacy.database-contract:contract-credit-card-accounts.cards:card__id",
+                    "destination": "datasetField:bank-account.core-infrastructure:nu-br.core.credit-cards:card__id"
+                }
+            ]
+        },
+        {
+            "id": "datasetField:legacy.database-contract:contract-sendman.card-tracking-status-history:db__tx_instant",
+            "type": "DATASET_FIELD",
+            "data": {
+                "namespace": "legacy.database-contract",
+                "dataset": "contract-sendman.card-tracking-status-history",
+                "datasetVersion": "bf9032f0-bec3-45f9-9533-3931f0dfb51d",
+                "field": "db__tx_instant",
+                "fieldType": "timestamp",
+                "transformationDescription": null,
+                "transformationType": null,
+                "inputFields": [
+                    {
+                        "namespace": "legacy.raw",
+                        "dataset": "raw-sendman.tx",
+                        "datasetVersion": "e462017f-57e7-409c-9814-d4b6d117f0e3",
+                        "field": "db__tx_instant",
+                        "transformationDescription": null,
+                        "transformationType": null
+                    }
+                ]
+            },
+            "inEdges": [
+                {
+                    "origin": "datasetField:legacy.database-contract:contract-sendman.card-tracking-status-history:db__tx_instant",
+                    "destination": "datasetField:legacy.raw:raw-sendman.tx:db__tx_instant"
+                }
+            ],
+            "outEdges": [
+                {
+                    "origin": "datasetField:legacy.database-contract:contract-sendman.card-tracking-status-history:db__tx_instant",
+                    "destination": "datasetField:credit-card-foundations.credit-card-platforms:nu-br.dataset.credit-card-account-id-to-first-physical-credit-card-activation:v"
+                }
+            ]
+        },
+        {
+            "id": "datasetField:legacy.raw:raw-sendman.tx:db__tx_instant",
+            "type": "DATASET_FIELD",
+            "data": {
+                "namespace": "legacy.raw",
+                "dataset": "raw-sendman.tx",
+                "datasetVersion": "e462017f-57e7-409c-9814-d4b6d117f0e3",
+                "field": "db__tx_instant",
+                "fieldType": "",
+                "transformationDescription": null,
+                "transformationType": null,
+                "inputFields": []
+            },
+            "inEdges": [],
+            "outEdges": [
+                {
+                    "origin": "datasetField:legacy.raw:raw-sendman.tx:db__tx_instant",
+                    "destination": "datasetField:legacy.database-contract:contract-sendman.card-tracking-status-history:db__tx_instant"
+                }
+            ]
+        }
+    ]
+}

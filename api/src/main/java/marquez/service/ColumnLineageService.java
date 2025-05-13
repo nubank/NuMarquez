@@ -51,41 +51,11 @@
      if (columnNodes.nodeIds.isEmpty()) {
        throw new NodeIdNotFoundException("Could not find node");
      }
- 
-     Set<ColumnLineageNodeData> lineageNodeData = new HashSet<>();
-     Set<UUID> currentLevelFields = new HashSet<>(columnNodes.nodeIds);
-     Set<UUID> processedFields = new HashSet<>();
-     int currentDepth = 0;
- 
-     while (!currentLevelFields.isEmpty() && currentDepth < depth) {
-       // Get direct lineage for current level fields
-       Set<ColumnLineageNodeData> directLineage = 
-           getDirectColumnLineage(new ArrayList<>(currentLevelFields), withDownstream, columnNodes.createdAtUntil);
-       
-       // Add to result set
-       lineageNodeData.addAll(directLineage);
-       
-       // Mark current fields as processed
-       processedFields.addAll(currentLevelFields);
-       
-       // Get next level fields to process
-       currentLevelFields.clear();
-       directLineage.forEach(node -> {
-         node.getInputFields().forEach(input -> {
-           UUID fieldUuid = datasetFieldDao.findUuid(
-               input.getNamespace(), 
-               input.getDataset(), 
-               input.getField())
-               .orElse(null);
-           if (fieldUuid != null && !processedFields.contains(fieldUuid)) {
-             currentLevelFields.add(fieldUuid);
-           }
-         });
-       });
-       
-       currentDepth++;
-     }
- 
+
+     // Use getLineage directly instead of iterative getDirectColumnLineage
+     Set<ColumnLineageNodeData> lineageNodeData = 
+         getLineage(depth, columnNodes.nodeIds, withDownstream, columnNodes.createdAtUntil);
+
      return toLineage(lineageNodeData, nodeId.hasVersion());
    }
  
