@@ -99,12 +99,6 @@ public interface ColumnLineageDao extends BaseDao {
   @SqlQuery(
       """
           WITH RECURSIVE
-            column_lineage_latest AS (
-                SELECT DISTINCT ON (output_dataset_field_uuid, input_dataset_field_uuid) *
-                FROM column_lineage
-                WHERE created_at <= :createdAtUntil
-                ORDER BY output_dataset_field_uuid, input_dataset_field_uuid, updated_at DESC, updated_at
-            ),
             dataset_fields_view AS (
               SELECT d.namespace_name as namespace_name, d.name as dataset_name, df.name as field_name, df.type, df.uuid, d.namespace_uuid
               FROM dataset_fields df
@@ -117,8 +111,9 @@ public interface ColumnLineageDao extends BaseDao {
                   0 as depth,
                   false as is_cycle,
                   ARRAY[ROW(output_dataset_field_uuid, input_dataset_field_uuid)] as path -- path and is_cycle mechanism as describe here https://www.postgresql.org/docs/current/queries-with.html (CYCLE clause not available in postgresql 12)
-                FROM column_lineage_latest
+                FROM tmp_column_lineage_latest
                 WHERE output_dataset_field_uuid IN (<datasetFieldUuids>)
+                  AND created_at <= :createdAtUntil
               )
               UNION ALL
               SELECT
@@ -133,13 +128,14 @@ public interface ColumnLineageDao extends BaseDao {
                 node.depth + 1 as depth,
                 ROW(adjacent_node.input_dataset_field_uuid, adjacent_node.output_dataset_field_uuid) = ANY(path) as is_cycle,
                 path || ROW(adjacent_node.input_dataset_field_uuid, adjacent_node.output_dataset_field_uuid) as path
-              FROM column_lineage_latest adjacent_node, column_lineage_recursive node
+              FROM tmp_column_lineage_latest adjacent_node, column_lineage_recursive node
               WHERE (
                 (node.input_dataset_field_uuid = adjacent_node.output_dataset_field_uuid) --upstream lineage
                 OR (:withDownstream AND adjacent_node.input_dataset_field_uuid = node.output_dataset_field_uuid) --optional downstream lineage
               )
               AND node.depth < :depth - 1 -- fetching single row means fetching single edge which is size 1
               AND NOT is_cycle
+              AND adjacent_node.created_at <= :createdAtUntil
             )
             SELECT
                 output_fields.namespace_name,
@@ -177,12 +173,11 @@ public interface ColumnLineageDao extends BaseDao {
   @SqlQuery(
       """
         WITH selected_column_lineage AS (
-          SELECT DISTINCT ON (cl.output_dataset_field_uuid, cl.input_dataset_field_uuid) cl.*, dv.namespace_uuid
-          FROM column_lineage cl
+          SELECT cl.*, dv.namespace_uuid
+          FROM tmp_column_lineage_latest cl
           JOIN dataset_fields df ON df.uuid = cl.output_dataset_field_uuid
           JOIN datasets_view dv ON dv.uuid = df.dataset_uuid
           WHERE ARRAY[<values>]::DATASET_NAME[] && dv.dataset_symlinks -- array of string pairs is cast onto array of DATASET_NAME types to be checked if it has non-empty intersection with dataset symlinks
-          ORDER BY output_dataset_field_uuid, input_dataset_field_uuid, updated_at DESC, updated_at
         ),
         dataset_fields_view AS (
             SELECT
@@ -244,13 +239,7 @@ public interface ColumnLineageDao extends BaseDao {
   
   @SqlQuery(
     """
-      WITH column_lineage_latest AS (
-          SELECT DISTINCT ON (output_dataset_field_uuid, input_dataset_field_uuid) *
-          FROM column_lineage
-          WHERE created_at <= :createdAtUntil
-          ORDER BY output_dataset_field_uuid, input_dataset_field_uuid, updated_at DESC, updated_at
-      ),
-      dataset_fields_view AS (
+      WITH dataset_fields_view AS (
         SELECT d.namespace_name as namespace_name, d.name as dataset_name, df.name as field_name, df.type, df.uuid, d.namespace_uuid
         FROM dataset_fields df
         INNER JOIN datasets_view d ON d.uuid = df.dataset_uuid
@@ -269,7 +258,7 @@ public interface ColumnLineageDao extends BaseDao {
             cl.transformation_type
           ]) AS inputFields,
           cl.output_dataset_version_uuid as dataset_version_uuid
-      FROM column_lineage_latest cl
+      FROM tmp_column_lineage_latest cl
       INNER JOIN dataset_fields_view output_fields ON cl.output_dataset_field_uuid = output_fields.uuid
       INNER JOIN dataset_symlinks ds_output ON ds_output.namespace_uuid = output_fields.namespace_uuid AND ds_output.name = output_fields.dataset_name
       LEFT JOIN dataset_fields_view input_fields ON cl.input_dataset_field_uuid = input_fields.uuid
@@ -277,6 +266,7 @@ public interface ColumnLineageDao extends BaseDao {
       WHERE output_fields.uuid IN (<datasetFieldUuids>)
         AND ds_output.is_primary is true 
         AND ds_input.is_primary is true
+        AND cl.created_at <= :createdAtUntil
       GROUP BY
           output_fields.namespace_name,
           output_fields.dataset_name,
