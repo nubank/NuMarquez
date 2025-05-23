@@ -65,7 +65,9 @@ public class ColumnLineageLatestRefresherJob extends AbstractScheduledService im
             log.info("Table tmp_column_lineage_latest refreshed successfully.");
           } finally {
             // Always release the lock, even if an error occurs
-            handle.execute("SELECT pg_advisory_unlock(:lockKey)", ADVISORY_LOCK_KEY);
+            handle.createUpdate("SELECT pg_advisory_unlock(:lockKey)")
+                .bind("lockKey", ADVISORY_LOCK_KEY)
+                .execute();
             log.info("Lock released.");
           }
         } else {
