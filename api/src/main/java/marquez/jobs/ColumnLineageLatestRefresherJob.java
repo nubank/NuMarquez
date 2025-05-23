@@ -8,6 +8,7 @@ package marquez.jobs;
 import com.google.common.util.concurrent.AbstractScheduledService;
 import io.dropwizard.lifecycle.Managed;
 import java.time.Duration;
+import java.time.LocalTime;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.jdbi.v3.core.Jdbi;
@@ -16,7 +17,7 @@ import org.jdbi.v3.core.Jdbi;
 @Slf4j
 public class ColumnLineageLatestRefresherJob extends AbstractScheduledService implements Managed {
 
-  private static final int FREQUENCY_MINS = 30;
+  private static final int FREQUENCY_MINS = 10;
   // Use a unique key for the advisory lock
   private static final long ADVISORY_LOCK_KEY = 123456789L; // Choose a unique number for your application
   private final Scheduler fixedRateScheduler;
@@ -24,9 +25,18 @@ public class ColumnLineageLatestRefresherJob extends AbstractScheduledService im
 
   public ColumnLineageLatestRefresherJob(@NonNull final Jdbi jdbi) {
     this.jdbi = jdbi;
-    // Define fixed schedule with no initial delay
+    
+    // Calculate delay until next 10-minute mark
+    LocalTime now = LocalTime.now();
+    int minutesRemaining = FREQUENCY_MINS - (now.getMinute() % FREQUENCY_MINS);
+    Duration initialDelay = Duration.ofMinutes(minutesRemaining);
+    
+    // Define fixed schedule starting at the next 10-minute mark
     this.fixedRateScheduler = Scheduler.newFixedRateSchedule(
-        Duration.ZERO, Duration.ofMinutes(FREQUENCY_MINS));
+        initialDelay, Duration.ofMinutes(FREQUENCY_MINS));
+    
+    log.info("Column lineage refresh will start in {} minutes and then run every {} minutes", 
+        minutesRemaining, FREQUENCY_MINS);
   }
 
   @Override
@@ -37,7 +47,8 @@ public class ColumnLineageLatestRefresherJob extends AbstractScheduledService im
   @Override
   public void start() throws Exception {
     startAsync().awaitRunning();
-    log.info("Refreshing tmp_column_lineage_latest table every '{}' mins.", FREQUENCY_MINS);
+    log.info("Refreshing tmp_column_lineage_latest table every '{}' mins, aligned to 10-minute marks.", 
+        FREQUENCY_MINS);
   }
 
   @Override
