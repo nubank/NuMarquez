@@ -70,13 +70,23 @@ public class ColumnLineageService extends DelegatingDaos.DelegatingColumnLineage
       
       // Get next level fields to process
       currentLevelFields.clear();
+
+      // Extract unique input field identifiers for bulk query
+      Set<Pair<String, Pair<String, String>>> inputFieldIdentifiers = directLineage.stream()
+          .flatMap(node -> node.getInputFields().stream())
+          .map(input -> Pair.of(input.getNamespace(), Pair.of(input.getDataset(), input.getField())))
+          .collect(Collectors.toSet());
+      
+      // Perform bulk query to fetch UUIDs
+      Map<Pair<String, Pair<String, String>>, UUID> fieldUuidMap = datasetFieldDao.findUuids(
+          new ArrayList<>(inputFieldIdentifiers)).stream()
+          .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
+      
+      // Process direct lineage using pre-fetched UUIDs
       directLineage.forEach(node -> {
         node.getInputFields().forEach(input -> {
-          UUID fieldUuid = datasetFieldDao.findUuid(
-              input.getNamespace(), 
-              input.getDataset(), 
-              input.getField())
-              .orElse(null);
+          UUID fieldUuid = fieldUuidMap.get(Pair.of(input.getNamespace(), 
+              Pair.of(input.getDataset(), input.getField())));
           if (fieldUuid != null && !processedFields.contains(fieldUuid)) {
             currentLevelFields.add(fieldUuid);
           }

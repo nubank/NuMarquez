@@ -39,6 +39,12 @@ public class ColumnLineageLatestRefresherJob extends AbstractScheduledService im
   }
 
   @Override
+  public void stop() throws Exception {
+    stopAsync().awaitTerminated();
+    log.info("Stopped refreshing tmp_column_lineage_latest table.");
+  }
+
+  @Override
   protected void runOneIteration() {
     try {
       log.info("Refreshing tmp_column_lineage_latest table...");

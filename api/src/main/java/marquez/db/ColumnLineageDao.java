@@ -278,22 +278,4 @@ public interface ColumnLineageDao extends BaseDao {
       @BindList(onEmpty = NULL_STRING) List<UUID> datasetFieldUuids,
       boolean withDownstream,
       Instant createdAtUntil);
-
-  /**
-   * Fetch all of the column lineage nodes that are directly connected to the input dataset fields.
-   * This returns a single layer of lineage using column lineage as edges. Fields that have
-   * no input or output lineage will have no results.
-   *
-   * @param datasetFieldUuids The UUIDs of the dataset fields to get lineage for
-   * @param withDownstream Whether to include downstream lineage
-   * @param createdAtUntil The point in time to get lineage for
-   * @return Set of ColumnLineageNodeData representing the direct lineage
-   */
-  default Set<ColumnLineageNodeData> getDirectColumnLineage(
-      @BindList(onEmpty = NULL_STRING) List<UUID> datasetFieldUuids,
-      boolean withDownstream,
-      Instant createdAtUntil,
-      int depth) {
-    throw new UnsupportedOperationException("Use getDirectColumnLineage and iterate in ColumnLineageService.");
-  }
 }
