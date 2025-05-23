@@ -37,7 +37,7 @@ BEGIN
         created_at,
         updated_at
     FROM column_lineage
-    ORDER BY output_dataset_field_uuid, input_dataset_field_uuid, updated_at DESC, updated_at;
+    ORDER BY output_dataset_field_uuid, input_dataset_field_uuid, updated_at DESC;
     
     -- Analyze the table to update statistics
     ANALYZE public.tmp_column_lineage_latest;
