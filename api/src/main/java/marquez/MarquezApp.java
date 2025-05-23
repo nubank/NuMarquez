@@ -36,6 +36,7 @@ import marquez.common.Utils;
 import marquez.db.DbMigration;
 import marquez.jobs.DbRetentionJob;
 import marquez.jobs.MaterializeViewRefresherJob;
+import marquez.jobs.ColumnLineageLatestRefresherJob;
 import marquez.logging.DelegatingSqlLogger;
 import marquez.logging.LabelledSqlLogger;
 import marquez.logging.LoggingMdcFilter;
@@ -157,6 +158,9 @@ public final class MarquezApp extends Application<MarquezConfig> {
 
     // Add job to refresh materialized views.
     env.lifecycle().manage(new MaterializeViewRefresherJob(jdbi));
+
+    // Add job to refresh temporary column lineage table
+    env.lifecycle().manage(new ColumnLineageLatestRefresherJob(jdbi));
 
     // set namespaceFilter
     ExclusionsConfig exclusions = config.getExclude();

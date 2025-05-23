@@ -27,6 +27,7 @@ import marquez.service.models.DatasetVersion;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
 import org.jdbi.v3.sqlobject.customizer.BindBean;
+import org.jdbi.v3.sqlobject.customizer.BindBeanList;
 import org.jdbi.v3.sqlobject.statement.SqlBatch;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
@@ -293,4 +294,17 @@ public interface DatasetFieldDao extends BaseDao {
     UUID tagUuid;
     Instant taggedAt;
   }
+
+  @SqlQuery(
+      """
+          SELECT df.uuid, df.name, d.namespace_name, d.name as dataset_name
+          FROM dataset_fields df
+          JOIN datasets_view AS d ON d.uuid = df.dataset_uuid
+          WHERE (d.namespace_name, d.name, df.name) IN (<values>)
+      """)
+  List<Pair<Pair<String, Pair<String, String>>, UUID>> findUuids(
+      @BindBeanList(
+              propertyNames = {"left", "right.left", "right.right"},
+              value = "values")
+          List<Pair<String, Pair<String, String>>> fieldIdentifiers);
 }
