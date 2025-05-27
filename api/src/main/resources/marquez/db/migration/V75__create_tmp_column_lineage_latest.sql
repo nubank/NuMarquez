@@ -65,6 +65,3 @@ BEGIN
         ON public.tmp_column_lineage_latest(updated_at);
 END;
 $$ LANGUAGE plpgsql;
-
--- Initial population of the table
-SELECT refresh_tmp_column_lineage_latest(); 
