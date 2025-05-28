@@ -18,6 +18,7 @@ import marquez.db.mappers.DatasetFieldMapper;
 import marquez.db.mappers.DatasetFieldRowMapper;
 import marquez.db.mappers.FieldDataMapper;
 import marquez.db.mappers.PairUuidInstantMapper;
+import marquez.db.mappers.ComplexPairMapper;
 import marquez.db.models.DatasetFieldRow;
 import marquez.db.models.DatasetRow;
 import marquez.db.models.InputFieldData;
@@ -36,6 +37,7 @@ import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 @RegisterRowMapper(DatasetFieldMapper.class)
 @RegisterRowMapper(FieldDataMapper.class)
 @RegisterRowMapper(PairUuidInstantMapper.class)
+@RegisterRowMapper(ComplexPairMapper.class)
 public interface DatasetFieldDao extends BaseDao {
   @SqlQuery(
       """
