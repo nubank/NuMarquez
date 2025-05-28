@@ -1,7 +1,19 @@
--- Drop the function if it exists to ensure clean state
-DROP FUNCTION IF EXISTS refresh_tmp_column_lineage_latest();
+-- Update the refresh function with improved error handling
+DO $$ 
+BEGIN
+    -- Check if the function exists
+    IF EXISTS (
+        SELECT 1 
+        FROM pg_proc 
+        WHERE proname = 'refresh_tmp_column_lineage_latest' 
+        AND pronamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
+    ) THEN
+        -- Drop the existing function
+        DROP FUNCTION IF EXISTS refresh_tmp_column_lineage_latest();
+    END IF;
+END $$;
 
--- Create function to refresh the temporary table
+-- Create the updated function
 CREATE OR REPLACE FUNCTION refresh_tmp_column_lineage_latest()
 RETURNS void AS $$
 BEGIN
