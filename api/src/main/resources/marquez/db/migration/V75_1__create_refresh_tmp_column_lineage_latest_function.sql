@@ -1,3 +1,6 @@
+-- Drop the function if it exists to ensure clean state
+DROP FUNCTION IF EXISTS refresh_tmp_column_lineage_latest();
+
 -- Create function to refresh the temporary table
 CREATE OR REPLACE FUNCTION refresh_tmp_column_lineage_latest()
 RETURNS void AS $$
@@ -34,5 +37,10 @@ BEGIN
         ON public.tmp_column_lineage_latest(input_dataset_field_uuid);
     CREATE INDEX idx_tmp_column_lineage_latest_updated_at 
         ON public.tmp_column_lineage_latest(updated_at);
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Log the error and rethrow
+        RAISE LOG 'Error in refresh_tmp_column_lineage_latest: %', SQLERRM;
+        RAISE;
 END;
 $$ LANGUAGE plpgsql; 
