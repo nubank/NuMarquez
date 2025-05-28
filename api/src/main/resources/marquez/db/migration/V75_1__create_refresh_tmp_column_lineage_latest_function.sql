@@ -1,8 +1,6 @@
 -- Create function to refresh the temporary table
 CREATE OR REPLACE FUNCTION refresh_tmp_column_lineage_latest()
 RETURNS void AS $$
-DECLARE
-    swap_table_name text := 'tmp_column_lineage_latest_swap';
 BEGIN
     -- Create a new table with the same structure in public schema
     DROP TABLE IF EXISTS public.tmp_column_lineage_latest_swap;
@@ -27,7 +25,7 @@ BEGIN
     
     -- Swap the tables (this is atomic)
     DROP TABLE IF EXISTS public.tmp_column_lineage_latest;
-    ALTER TABLE public.tmp_column_lineage_latest_swap RENAME TO tmp_column_lineage_latest;
+    ALTER TABLE public.tmp_column_lineage_latest_swap RENAME TO public.tmp_column_lineage_latest;
     
     -- Recreate indexes
     CREATE INDEX idx_tmp_column_lineage_latest_output_field 
