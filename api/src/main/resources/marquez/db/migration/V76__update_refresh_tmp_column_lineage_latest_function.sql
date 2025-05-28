@@ -1,36 +1,17 @@
--- First, let's check if we can create a simple table to test permissions
-CREATE TABLE IF NOT EXISTS public.migration_test (
-    id serial PRIMARY KEY,
-    test_column text
-);
+-- Drop the function if it exists (with explicit schema)
+DROP FUNCTION IF EXISTS public.refresh_tmp_column_lineage_latest();
 
--- Now let's check if the function exists and log it
-DO $$ 
-DECLARE
-    func_exists boolean;
-BEGIN
-    SELECT EXISTS (
-        SELECT 1 
-        FROM pg_proc 
-        WHERE proname = 'refresh_tmp_column_lineage_latest' 
-        AND pronamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
-    ) INTO func_exists;
-    
-    -- Insert the result into our test table
-    INSERT INTO public.migration_test (test_column) 
-    VALUES ('Function exists: ' || func_exists::text);
-END $$;
-
--- Create the actual function
+-- Create the function with explicit schema
 CREATE OR REPLACE FUNCTION public.refresh_tmp_column_lineage_latest()
 RETURNS void AS $$
+DECLARE
+    temp_table_name text := 'tmp_column_lineage_latest_new';
 BEGIN
-    -- Create a new table with the same structure in public schema
-    DROP TABLE IF EXISTS public.tmp_column_lineage_latest_swap;
-    CREATE TABLE public.tmp_column_lineage_latest_swap (LIKE public.tmp_column_lineage_latest INCLUDING ALL);
+    -- Create a new temporary table with the same structure
+    CREATE TEMP TABLE IF NOT EXISTS tmp_column_lineage_latest_new (LIKE public.tmp_column_lineage_latest INCLUDING ALL);
     
-    -- Insert fresh data into the swap table
-    INSERT INTO public.tmp_column_lineage_latest_swap
+    -- Insert fresh data into the new table
+    INSERT INTO tmp_column_lineage_latest_new
     SELECT DISTINCT ON (output_dataset_field_uuid, input_dataset_field_uuid) 
         output_dataset_version_uuid,
         output_dataset_field_uuid,
@@ -43,12 +24,13 @@ BEGIN
     FROM column_lineage
     ORDER BY output_dataset_field_uuid, input_dataset_field_uuid, updated_at DESC;
     
-    -- Analyze the swap table
-    ANALYZE public.tmp_column_lineage_latest_swap;
+    -- Analyze the new table
+    ANALYZE tmp_column_lineage_latest_new;
     
     -- Swap the tables (this is atomic)
     DROP TABLE IF EXISTS public.tmp_column_lineage_latest;
-    ALTER TABLE public.tmp_column_lineage_latest_swap RENAME TO public.tmp_column_lineage_latest;
+    ALTER TABLE tmp_column_lineage_latest_new RENAME TO tmp_column_lineage_latest;
+    ALTER TABLE tmp_column_lineage_latest SET SCHEMA public;
     
     -- Recreate indexes
     CREATE INDEX idx_tmp_column_lineage_latest_output_field 
@@ -60,9 +42,21 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Log that we created the function
-INSERT INTO public.migration_test (test_column) 
-VALUES ('Function created successfully');
-
--- Clean up
-DROP TABLE IF EXISTS public.migration_test; 
+-- Verify the function was created
+DO $$ 
+DECLARE
+    func_exists boolean;
+BEGIN
+    -- Check if the function exists
+    SELECT EXISTS (
+        SELECT 1 
+        FROM pg_proc 
+        WHERE proname = 'refresh_tmp_column_lineage_latest' 
+        AND pronamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
+    ) INTO func_exists;
+    
+    -- If function doesn't exist, raise an exception
+    IF NOT func_exists THEN
+        RAISE EXCEPTION 'Function refresh_tmp_column_lineage_latest was not created successfully';
+    END IF;
+END $$; 
