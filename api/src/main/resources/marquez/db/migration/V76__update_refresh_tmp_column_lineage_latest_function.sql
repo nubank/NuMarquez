@@ -4,8 +4,6 @@ DROP FUNCTION IF EXISTS public.refresh_tmp_column_lineage_latest();
 -- Create the function with explicit schema
 CREATE OR REPLACE FUNCTION public.refresh_tmp_column_lineage_latest()
 RETURNS void AS $$
-DECLARE
-    temp_table_name text := 'tmp_column_lineage_latest_new';
 BEGIN
     -- Create a new temporary table with the same structure
     CREATE TEMP TABLE IF NOT EXISTS tmp_column_lineage_latest_new (LIKE public.tmp_column_lineage_latest INCLUDING ALL);
