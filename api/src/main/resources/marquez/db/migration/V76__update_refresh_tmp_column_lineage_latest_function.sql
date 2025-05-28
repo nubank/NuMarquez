@@ -1,15 +1,69 @@
--- First, try to drop the function if it exists
-DROP FUNCTION IF EXISTS public.refresh_tmp_column_lineage_latest();
+-- First, let's check if we can create a simple table to test permissions
+CREATE TABLE IF NOT EXISTS public.migration_test (
+    id serial PRIMARY KEY,
+    test_column text
+);
 
--- Create a simple function first to test if we can create functions at all
-CREATE OR REPLACE FUNCTION public.test_function_creation()
+-- Now let's check if the function exists and log it
+DO $$ 
+DECLARE
+    func_exists boolean;
+BEGIN
+    SELECT EXISTS (
+        SELECT 1 
+        FROM pg_proc 
+        WHERE proname = 'refresh_tmp_column_lineage_latest' 
+        AND pronamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
+    ) INTO func_exists;
+    
+    -- Insert the result into our test table
+    INSERT INTO public.migration_test (test_column) 
+    VALUES ('Function exists: ' || func_exists::text);
+END $$;
+
+-- Try to create a very simple function
+CREATE OR REPLACE FUNCTION public.test_function()
 RETURNS text AS $$
 BEGIN
-    RETURN 'Function creation test successful';
+    RETURN 'test';
 END;
 $$ LANGUAGE plpgsql;
 
--- Now create our actual function
+-- Log that we created the test function
+INSERT INTO public.migration_test (test_column) 
+VALUES ('Test function created successfully');
+
+-- Clean up
+DROP TABLE IF EXISTS public.migration_test;
+DROP FUNCTION IF EXISTS public.test_function();
+
+-- Start a new transaction
+BEGIN;
+
+-- First, just try to create a very simple function
+CREATE OR REPLACE FUNCTION public.test_simple_function()
+RETURNS text AS $$
+BEGIN
+    RETURN 'test';
+END;
+$$ LANGUAGE plpgsql;
+
+-- If that succeeds, commit the transaction
+COMMIT;
+
+-- Start a new transaction for the next step
+BEGIN;
+
+-- Now try to drop the existing function
+DROP FUNCTION IF EXISTS public.refresh_tmp_column_lineage_latest();
+
+-- If that succeeds, commit
+COMMIT;
+
+-- Start a new transaction for the final step
+BEGIN;
+
+-- Create the actual function
 CREATE OR REPLACE FUNCTION public.refresh_tmp_column_lineage_latest()
 RETURNS void AS $$
 BEGIN
@@ -49,4 +103,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Clean up test function
-DROP FUNCTION IF EXISTS public.test_function_creation(); 
+DROP FUNCTION IF EXISTS public.test_simple_function();
+
+-- Commit the final transaction
+COMMIT; 
