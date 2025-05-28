@@ -21,48 +21,6 @@ BEGIN
     VALUES ('Function exists: ' || func_exists::text);
 END $$;
 
--- Try to create a very simple function
-CREATE OR REPLACE FUNCTION public.test_function()
-RETURNS text AS $$
-BEGIN
-    RETURN 'test';
-END;
-$$ LANGUAGE plpgsql;
-
--- Log that we created the test function
-INSERT INTO public.migration_test (test_column) 
-VALUES ('Test function created successfully');
-
--- Clean up
-DROP TABLE IF EXISTS public.migration_test;
-DROP FUNCTION IF EXISTS public.test_function();
-
--- Start a new transaction
-BEGIN;
-
--- First, just try to create a very simple function
-CREATE OR REPLACE FUNCTION public.test_simple_function()
-RETURNS text AS $$
-BEGIN
-    RETURN 'test';
-END;
-$$ LANGUAGE plpgsql;
-
--- If that succeeds, commit the transaction
-COMMIT;
-
--- Start a new transaction for the next step
-BEGIN;
-
--- Now try to drop the existing function
-DROP FUNCTION IF EXISTS public.refresh_tmp_column_lineage_latest();
-
--- If that succeeds, commit
-COMMIT;
-
--- Start a new transaction for the final step
-BEGIN;
-
 -- Create the actual function
 CREATE OR REPLACE FUNCTION public.refresh_tmp_column_lineage_latest()
 RETURNS void AS $$
@@ -102,8 +60,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Clean up test function
-DROP FUNCTION IF EXISTS public.test_simple_function();
+-- Log that we created the function
+INSERT INTO public.migration_test (test_column) 
+VALUES ('Function created successfully');
 
--- Commit the final transaction
-COMMIT; 
+-- Clean up
+DROP TABLE IF EXISTS public.migration_test; 
