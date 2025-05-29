@@ -191,16 +191,6 @@ import org.jdbi.v3.sqlobject.customizer.BindBean;
        """)
    List<Pair<UUID, Instant>> findFieldsUuidsByJobVersion(UUID jobVersion);
  
-//    @SqlQuery(
-//        """
-//            SELECT df.uuid
-//            FROM dataset_fields  df
-//            JOIN datasets_view AS d ON d.uuid = df.dataset_uuid
-//            WHERE CAST((:namespaceName, :datasetName) AS DATASET_NAME) = ANY(d.dataset_symlinks)
-//            AND df.name = :name
-//        """)
-//    Optional<UUID> findUuid(String namespaceName, String datasetName, String name);
- 
    @SqlQuery(
        """
            SELECT df.uuid, dv.created_at
