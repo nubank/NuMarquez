@@ -18,6 +18,7 @@ import marquez.db.mappers.DatasetFieldMapper;
 import marquez.db.mappers.DatasetFieldRowMapper;
 import marquez.db.mappers.FieldDataMapper;
 import marquez.db.mappers.PairUuidInstantMapper;
+import marquez.db.mappers.ComplexDatasetFieldPairMapper;
 import marquez.db.models.DatasetFieldRow;
 import marquez.db.models.DatasetRow;
 import marquez.db.models.InputFieldData;
@@ -31,11 +32,13 @@ import org.jdbi.v3.sqlobject.customizer.BindBeanList;
 import org.jdbi.v3.sqlobject.statement.SqlBatch;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
+import org.jdbi.v3.sqlobject.statement.UseRowMapper;
 
 @RegisterRowMapper(DatasetFieldRowMapper.class)
 @RegisterRowMapper(DatasetFieldMapper.class)
 @RegisterRowMapper(FieldDataMapper.class)
 @RegisterRowMapper(PairUuidInstantMapper.class)
+@RegisterRowMapper(ComplexDatasetFieldPairMapper.class)
 public interface DatasetFieldDao extends BaseDao {
   @SqlQuery(
       """
@@ -302,6 +305,7 @@ public interface DatasetFieldDao extends BaseDao {
           JOIN datasets_view AS d ON d.uuid = df.dataset_uuid
           WHERE (d.namespace_name, d.name, df.name) IN (<values>)
       """)
+  @UseRowMapper(ComplexDatasetFieldPairMapper.class)
   List<Pair<Pair<String, Pair<String, String>>, UUID>> findUuids(
       @BindBeanList(
               propertyNames = {"left", "right.left", "right.right"},
