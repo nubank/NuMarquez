@@ -17,7 +17,7 @@ import org.jdbi.v3.core.Jdbi;
 @Slf4j
 public class ColumnLineageLatestRefresherJob extends AbstractScheduledService implements Managed {
 
-  private static final int FREQUENCY_MINS = 10;
+  private static final int FREQUENCY_MINS = 30;
   // Use a unique key for the advisory lock
   private static final long ADVISORY_LOCK_KEY = 123456789L; // Choose a unique number for your application
   private final Scheduler fixedRateScheduler;
