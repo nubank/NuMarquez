@@ -18,7 +18,6 @@ import marquez.db.mappers.DatasetFieldMapper;
 import marquez.db.mappers.DatasetFieldRowMapper;
 import marquez.db.mappers.FieldDataMapper;
 import marquez.db.mappers.PairUuidInstantMapper;
-import marquez.db.mappers.ComplexPairMapper;
 import marquez.db.models.DatasetFieldRow;
 import marquez.db.models.DatasetRow;
 import marquez.db.models.InputFieldData;
