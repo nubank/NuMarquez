@@ -37,7 +37,6 @@ import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 @RegisterRowMapper(DatasetFieldMapper.class)
 @RegisterRowMapper(FieldDataMapper.class)
 @RegisterRowMapper(PairUuidInstantMapper.class)
-@RegisterRowMapper(ComplexPairMapper.class)
 public interface DatasetFieldDao extends BaseDao {
   @SqlQuery(
       """
