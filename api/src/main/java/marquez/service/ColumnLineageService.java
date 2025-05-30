@@ -71,6 +71,7 @@ public class ColumnLineageService extends DelegatingDaos.DelegatingColumnLineage
       // Get next level fields to process
       currentLevelFields.clear();
       directLineage.forEach(node -> {
+        // Process input fields for upstream lineage
         node.getInputFields().forEach(input -> {
           UUID fieldUuid = datasetFieldDao.findUuid(
               input.getNamespace(), 
@@ -81,6 +82,20 @@ public class ColumnLineageService extends DelegatingDaos.DelegatingColumnLineage
             currentLevelFields.add(fieldUuid);
           }
         });
+        
+        // Process output fields for downstream lineage
+        if (withDownstream) {
+          node.getOutputFields().forEach(output -> {
+            UUID fieldUuid = datasetFieldDao.findUuid(
+                output.getNamespace(), 
+                output.getDataset(), 
+                output.getField())
+                .orElse(null);
+            if (fieldUuid != null && !processedFields.contains(fieldUuid)) {
+              currentLevelFields.add(fieldUuid);
+            }
+          });
+        }
       });
       
       currentDepth++;

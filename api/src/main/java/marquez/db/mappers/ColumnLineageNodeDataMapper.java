@@ -27,6 +27,10 @@
      PgArray inputFieldsArray = (PgArray) rs.getArray("inputFields");
      Object[] inputFields = (Object[]) inputFieldsArray.getArray();
      
+     // Get the outputFields array from the result set
+     PgArray outputFieldsArray = (PgArray) rs.getArray("outputFields");
+     Object[] outputFields = (Object[]) outputFieldsArray.getArray();
+     
      // Convert each input field array into an InputFieldNodeData
      ImmutableList<InputFieldNodeData> inputFieldNodes = Arrays.stream(inputFields)
          .map(field -> (String[]) field)
@@ -39,15 +43,29 @@
              fieldArray[5]  // transformation_type
          ))
          .collect(ImmutableList.toImmutableList());
- 
-     // Create ColumnLineageNodeData using the input fields
+
+     // Convert each output field array into an InputFieldNodeData
+     ImmutableList<InputFieldNodeData> outputFieldNodes = Arrays.stream(outputFields)
+         .map(field -> (String[]) field)
+         .map(fieldArray -> new InputFieldNodeData(
+             fieldArray[0], // namespace_name
+             fieldArray[1], // dataset_name
+             UUID.fromString(fieldArray[2]), // output_dataset_version_uuid
+             fieldArray[3], // field_name
+             fieldArray[4], // transformation_description
+             fieldArray[5]  // transformation_type
+         ))
+         .collect(ImmutableList.toImmutableList());
+
+     // Create ColumnLineageNodeData using both input and output fields
      return new ColumnLineageNodeData(
          rs.getString("namespace_name"),
          rs.getString("dataset_name"),
          rs.getString("dataset_version_uuid") != null ? UUID.fromString(rs.getString("dataset_version_uuid")) : null,
          rs.getString("field_name"),
          rs.getString("type"),
-         inputFieldNodes
+         inputFieldNodes,
+         outputFieldNodes
      );
    }
  
