@@ -150,6 +150,14 @@ public interface ColumnLineageDao extends BaseDao {
                   clr.transformation_description,
                   clr.transformation_type
                 ]) AS inputFields,
+                ARRAY_AGG(DISTINCT ARRAY[
+                  output_fields.namespace_name,
+                  output_fields.dataset_name,
+                  CAST(clr.output_dataset_version_uuid AS VARCHAR),
+                  output_fields.field_name,
+                  clr.transformation_description,
+                  clr.transformation_type
+                ]) FILTER (WHERE clr.output_dataset_field_uuid IS NOT NULL) AS outputFields,
                 clr.output_dataset_version_uuid as dataset_version_uuid
             FROM column_lineage_recursive clr
             INNER JOIN dataset_fields_view output_fields ON clr.output_dataset_field_uuid = output_fields.uuid -- hidden datasets will be filtered
@@ -274,6 +282,14 @@ public interface ColumnLineageDao extends BaseDao {
             cl.transformation_description,
             cl.transformation_type
           ]) AS inputFields,
+          ARRAY_AGG(DISTINCT ARRAY[
+            output_fields.namespace_name,
+            output_fields.dataset_name,
+            CAST(cl.output_dataset_version_uuid AS VARCHAR),
+            output_fields.field_name,
+            cl.transformation_description,
+            cl.transformation_type
+          ]) FILTER (WHERE cl.output_dataset_field_uuid IS NOT NULL) AS outputFields,
           cl.output_dataset_version_uuid as dataset_version_uuid
       FROM tmp_column_lineage_latest cl
       INNER JOIN dataset_fields_view output_fields ON cl.output_dataset_field_uuid = output_fields.uuid
