@@ -29,7 +29,8 @@ public class ColumnLineageNodeDataTest {
                     UUID.randomUUID(),
                     "other-field",
                     "transformation description",
-                    "transformation type")));
+                    "transformation type")),
+            ImmutableList.of());
 
     assertThat(node.getTransformationDescription()).isEqualTo("transformation description");
     assertThat(node.getTransformationType()).isEqualTo("transformation type");
@@ -39,7 +40,7 @@ public class ColumnLineageNodeDataTest {
   public void testGettersWhenEmptyInputFields() {
     ColumnLineageNodeData node =
         new ColumnLineageNodeData(
-            "namespace", "dataset", UUID.randomUUID(), "field", "varchar", ImmutableList.of());
+            "namespace", "dataset", UUID.randomUUID(), "field", "varchar", ImmutableList.of(), ImmutableList.of());
     assertThat(node.getTransformationDescription()).isNull();
     assertThat(node.getTransformationType()).isNull();
   }
@@ -48,7 +49,7 @@ public class ColumnLineageNodeDataTest {
   public void testGettersWhenInputFieldsAreNull() {
     ColumnLineageNodeData node =
         new ColumnLineageNodeData(
-            "namespace", "dataset", UUID.randomUUID(), "field", "varchar", null);
+            "namespace", "dataset", UUID.randomUUID(), "field", "varchar", null, ImmutableList.of());
     assertThat(node.getTransformationDescription()).isNull();
     assertThat(node.getTransformationType()).isNull();
   }
