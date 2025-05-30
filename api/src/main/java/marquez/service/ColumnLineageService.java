@@ -70,27 +70,32 @@ public class ColumnLineageService extends DelegatingDaos.DelegatingColumnLineage
       
       // Get next level fields to process
       currentLevelFields.clear();
-
-      // Extract unique input field identifiers for bulk query
-      Set<Pair<String, Pair<String, String>>> inputFieldIdentifiers = directLineage.stream()
-          .flatMap(node -> node.getInputFields().stream())
-          .map(input -> Pair.of(input.getNamespace(), Pair.of(input.getDataset(), input.getField())))
-          .collect(Collectors.toSet());
-      
-      // Perform bulk query to fetch UUIDs
-      Map<Pair<String, Pair<String, String>>, UUID> fieldUuidMap = datasetFieldDao.findUuids(
-          new ArrayList<>(inputFieldIdentifiers)).stream()
-          .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
-      
-      // Process direct lineage using pre-fetched UUIDs
       directLineage.forEach(node -> {
+        // Process input fields for upstream lineage
         node.getInputFields().forEach(input -> {
-          UUID fieldUuid = fieldUuidMap.get(Pair.of(input.getNamespace(), 
-              Pair.of(input.getDataset(), input.getField())));
+          UUID fieldUuid = datasetFieldDao.findUuid(
+              input.getNamespace(), 
+              input.getDataset(), 
+              input.getField())
+              .orElse(null);
           if (fieldUuid != null && !processedFields.contains(fieldUuid)) {
             currentLevelFields.add(fieldUuid);
           }
         });
+        
+        // Process output fields for downstream lineage
+        if (withDownstream) {
+          node.getOutputFields().forEach(output -> {
+            UUID fieldUuid = datasetFieldDao.findUuid(
+                output.getNamespace(), 
+                output.getDataset(), 
+                output.getField())
+                .orElse(null);
+            if (fieldUuid != null && !processedFields.contains(fieldUuid)) {
+              currentLevelFields.add(fieldUuid);
+            }
+          });
+        }
       });
       
       currentDepth++;
@@ -294,3 +299,4 @@ public class ColumnLineageService extends DelegatingDaos.DelegatingColumnLineage
 
   private record ColumnNodes(Instant createdAtUntil, List<UUID> nodeIds) {}
 }
+ 

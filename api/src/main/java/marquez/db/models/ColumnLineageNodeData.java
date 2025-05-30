@@ -26,6 +26,7 @@ public class ColumnLineageNodeData implements NodeData {
   @Nullable String transformationDescription;
   @Nullable String transformationType;
   @NonNull List<InputFieldNodeData> inputFields;
+  @NonNull List<InputFieldNodeData> outputFields;
 
   public ColumnLineageNodeData(
       String namespace,
@@ -33,13 +34,15 @@ public class ColumnLineageNodeData implements NodeData {
       UUID datasetVersion,
       String field,
       String fieldType,
-      ImmutableList<InputFieldNodeData> inputFields) {
+      ImmutableList<InputFieldNodeData> inputFields,
+      ImmutableList<InputFieldNodeData> outputFields) {
     this.namespace = namespace;
     this.dataset = dataset;
     this.datasetVersion = datasetVersion;
     this.field = field;
     this.fieldType = fieldType;
     this.inputFields = inputFields;
+    this.outputFields = outputFields;
   }
 
   public ColumnLineageNodeData(InputFieldNodeData data) {
@@ -51,6 +54,7 @@ public class ColumnLineageNodeData implements NodeData {
     this.transformationDescription = data.transformationDescription;
     this.transformationType = data.transformationType;
     this.inputFields = ImmutableList.of();
+    this.outputFields = ImmutableList.of();
   }
 
   /**

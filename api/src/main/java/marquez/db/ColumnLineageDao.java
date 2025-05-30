@@ -96,7 +96,7 @@ public interface ColumnLineageDao extends BaseDao {
               value = "values")
           List<ColumnLineageRow> rows);
 
-  @SqlQuery(
+    @SqlQuery(
       """
           WITH RECURSIVE
             dataset_fields_view AS (
@@ -150,6 +150,14 @@ public interface ColumnLineageDao extends BaseDao {
                   clr.transformation_description,
                   clr.transformation_type
                 ]) AS inputFields,
+                ARRAY_AGG(DISTINCT ARRAY[
+                  output_fields.namespace_name,
+                  output_fields.dataset_name,
+                  CAST(clr.output_dataset_version_uuid AS VARCHAR),
+                  output_fields.field_name,
+                  clr.transformation_description,
+                  clr.transformation_type
+                ]) FILTER (WHERE clr.output_dataset_field_uuid IS NOT NULL) AS outputFields,
                 clr.output_dataset_version_uuid as dataset_version_uuid
             FROM column_lineage_recursive clr
             INNER JOIN dataset_fields_view output_fields ON clr.output_dataset_field_uuid = output_fields.uuid -- hidden datasets will be filtered
@@ -212,6 +220,14 @@ public interface ColumnLineageDao extends BaseDao {
             c.transformation_description,
             c.transformation_type
           ]) AS inputFields,
+          ARRAY_AGG(DISTINCT ARRAY[
+            output_fields.namespace_name,
+            output_fields.dataset_name,
+            CAST(c.output_dataset_version_uuid AS VARCHAR),
+            output_fields.field_name,
+            c.transformation_description,
+            c.transformation_type
+          ]) FILTER (WHERE c.output_dataset_field_uuid IS NOT NULL) AS outputFields,
           null as dataset_version_uuid
         FROM selected_column_lineage c
         INNER JOIN dataset_fields_view output_fields ON c.output_dataset_field_uuid = output_fields.uuid
@@ -235,8 +251,17 @@ public interface ColumnLineageDao extends BaseDao {
               propertyNames = {"left", "right"},
               value = "values")
           List<Pair<String, String>> datasets);
-  
-  
+
+  /**
+   * Fetch all of the column lineage nodes that are directly connected to the input dataset fields.
+   * This returns a single layer of lineage using column lineage as edges. Fields that have
+   * no input or output lineage will have no results.
+   *
+   * @param datasetFieldUuids The UUIDs of the dataset fields to get lineage for
+   * @param withDownstream Whether to include downstream lineage
+   * @param createdAtUntil The point in time to get lineage for
+   * @return Set of ColumnLineageNodeData representing the direct lineage
+   */
   @SqlQuery(
     """
       WITH dataset_fields_view AS (
@@ -257,6 +282,14 @@ public interface ColumnLineageDao extends BaseDao {
             cl.transformation_description,
             cl.transformation_type
           ]) AS inputFields,
+          ARRAY_AGG(DISTINCT ARRAY[
+            output_fields.namespace_name,
+            output_fields.dataset_name,
+            CAST(cl.output_dataset_version_uuid AS VARCHAR),
+            output_fields.field_name,
+            cl.transformation_description,
+            cl.transformation_type
+          ]) FILTER (WHERE cl.output_dataset_field_uuid IS NOT NULL) AS outputFields,
           cl.output_dataset_version_uuid as dataset_version_uuid
       FROM tmp_column_lineage_latest cl
       INNER JOIN dataset_fields_view output_fields ON cl.output_dataset_field_uuid = output_fields.uuid
