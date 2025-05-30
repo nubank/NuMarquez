@@ -212,6 +212,14 @@ public interface ColumnLineageDao extends BaseDao {
             c.transformation_description,
             c.transformation_type
           ]) AS inputFields,
+          ARRAY_AGG(DISTINCT ARRAY[
+            output_fields.namespace_name,
+            output_fields.dataset_name,
+            CAST(c.output_dataset_version_uuid AS VARCHAR),
+            output_fields.field_name,
+            c.transformation_description,
+            c.transformation_type
+          ]) FILTER (WHERE c.output_dataset_field_uuid IS NOT NULL) AS outputFields,
           null as dataset_version_uuid
         FROM selected_column_lineage c
         INNER JOIN dataset_fields_view output_fields ON c.output_dataset_field_uuid = output_fields.uuid
