@@ -8,12 +8,12 @@ package marquez.service;
 import com.google.common.collect.ImmutableSortedSet;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet; 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -53,112 +53,142 @@ public class ColumnLineageService extends DelegatingDaos.DelegatingColumnLineage
         throw new NodeIdNotFoundException("Could not find node");
     }
 
-    // 2. Initialize collections for direct lineage collection
-    Set<ColumnLineageNodeData> lineageNodeData = new HashSet<>();
+    // 2. Initialize collections for lineage collection
+    Set<ColumnLineageNodeData> allLineageData = new HashSet<>();
     Set<UUID> processedFields = new HashSet<>();
     Set<UUID> currentLevelFields = new HashSet<>(columnNodes.nodeIds);
 
-    // 3. Process each depth level
+    // 3. Process each depth level using BFS
     for (int currentDepth = 0; currentDepth < depth && !currentLevelFields.isEmpty(); currentDepth++) {
+        log.debug("Processing depth {} for column lineage", currentDepth);
+
         // Get direct lineage for current level fields
         Set<ColumnLineageNodeData> directLineage = 
             getDirectColumnLineage(new ArrayList<>(currentLevelFields), withDownstream, columnNodes.createdAtUntil);
         
         // Add to results
-        lineageNodeData.addAll(directLineage);
+        allLineageData.addAll(directLineage);
         
         // Mark current fields as processed
         processedFields.addAll(currentLevelFields);
         
-        // Get next level fields (only direct relationships)
-        currentLevelFields.clear();
-        directLineage.forEach(node -> {
-            // For upstream lineage, collect only direct input fields
-            node.getInputFields().forEach(input -> {
+        // Prepare next level fields
+        Set<UUID> nextLevelFields = new HashSet<>();
+        
+        // Process each node in the direct lineage
+        for (ColumnLineageNodeData node : directLineage) {
+            // Handle upstream lineage (always included)
+            for (InputFieldNodeData input : node.getInputFields()) {
                 UUID fieldUuid = datasetFieldDao.findUuid(
                     input.getNamespace(), 
                     input.getDataset(), 
                     input.getField())
                     .orElse(null);
                 if (fieldUuid != null && !processedFields.contains(fieldUuid)) {
-                    currentLevelFields.add(fieldUuid);
+                    nextLevelFields.add(fieldUuid);
                 }
-            });
+            }
             
-            // For downstream lineage, collect only direct output fields
+            // Handle downstream lineage (only if requested)
             if (withDownstream) {
-                node.getOutputFields().forEach(output -> {
+                for (InputFieldNodeData output : node.getOutputFields()) {
                     UUID fieldUuid = datasetFieldDao.findUuid(
                         output.getNamespace(), 
                         output.getDataset(), 
                         output.getField())
                         .orElse(null);
                     if (fieldUuid != null && !processedFields.contains(fieldUuid)) {
-                        currentLevelFields.add(fieldUuid);
+                        nextLevelFields.add(fieldUuid);
                     }
-                });
+                }
             }
-        });
+        }
+        
+        // Update current level for next iteration
+        currentLevelFields = nextLevelFields;
     }
 
-    return toLineage(lineageNodeData, nodeId.hasVersion());
+    // 4. Build and return the lineage graph
+    return toLineage(allLineageData, nodeId.hasVersion());
   }
 
   private Lineage toLineage(Set<ColumnLineageNodeData> lineageNodeData, boolean includeVersion) {
     Map<NodeId, Node.Builder> graphNodes = new HashMap<>();
-    Map<NodeId, List<NodeId>> inEdges = new HashMap<>();
-    Map<NodeId, List<NodeId>> outEdges = new HashMap<>();
+    Map<NodeId, Set<NodeId>> inEdges = new HashMap<>();
+    Map<NodeId, Set<NodeId>> outEdges = new HashMap<>();
 
-    // create nodes
-    lineageNodeData.stream()
-        .forEach(
-            columnLineageNodeData -> {
-              NodeId nodeId = toNodeId(columnLineageNodeData, includeVersion);
-              graphNodes.put(nodeId, Node.datasetField().data(columnLineageNodeData).id(nodeId));
-              columnLineageNodeData.getInputFields().stream()
-                  .forEach(
-                      inputNode -> {
-                        NodeId inputNodeId = toNodeId(inputNode, includeVersion);
-                        graphNodes.putIfAbsent(
-                            inputNodeId,
-                            Node.datasetField()
-                                .id(inputNodeId)
-                                .data(new ColumnLineageNodeData(inputNode)));
-                        Optional.ofNullable(outEdges.get(inputNodeId))
-                            .ifPresentOrElse(
-                                nodeEdges -> nodeEdges.add(nodeId),
-                                () -> outEdges.put(inputNodeId, new LinkedList<>(List.of(nodeId))));
-                        Optional.ofNullable(inEdges.get(nodeId))
-                            .ifPresentOrElse(
-                                nodeEdges -> nodeEdges.add(inputNodeId),
-                                () -> inEdges.put(nodeId, new LinkedList<>(List.of(inputNodeId))));
-                      });
-            });
+    // Create nodes and build edge mappings
+    for (ColumnLineageNodeData nodeData : lineageNodeData) {
+        NodeId nodeId = toNodeId(nodeData, includeVersion);
+        
+        // Create or get node builder
+        graphNodes.computeIfAbsent(
+            nodeId,
+            id -> Node.datasetField().data(nodeData).id(id)
+        );
 
-    // add edges between the nodes
-    inEdges.forEach(
-        (nodeId, nodes) -> {
-          graphNodes
-              .get(nodeId)
-              .inEdges(
-                  nodes.stream()
-                      .map(toNodeId -> new Edge(nodeId, toNodeId))
-                      .collect(Collectors.toSet()));
-        });
-    outEdges.forEach(
-        (nodeId, nodes) -> {
-          graphNodes
-              .get(nodeId)
-              .outEdges(
-                  nodes.stream()
-                      .map(toNodeId -> new Edge(nodeId, toNodeId))
-                      .collect(Collectors.toSet()));
-        });
+        // Process input fields (upstream)
+        for (InputFieldNodeData input : nodeData.getInputFields()) {
+            NodeId inputNodeId = toNodeId(input, includeVersion);
+            
+            // Create input node if it doesn't exist
+            graphNodes.computeIfAbsent(
+                inputNodeId,
+                id -> Node.datasetField()
+                    .id(id)
+                    .data(new ColumnLineageNodeData(input))
+            );
 
-    // build nodes and return as lineage
-    return new Lineage(
-        ImmutableSortedSet.copyOf(
-            graphNodes.values().stream().map(Node.Builder::build).collect(Collectors.toSet())));
+            // Add edges
+            inEdges.computeIfAbsent(nodeId, k -> new HashSet<>()).add(inputNodeId);
+            outEdges.computeIfAbsent(inputNodeId, k -> new HashSet<>()).add(nodeId);
+        }
+
+        // Process output fields (downstream)
+        for (InputFieldNodeData output : nodeData.getOutputFields()) {
+            NodeId outputNodeId = toNodeId(output, includeVersion);
+            
+            // Create output node if it doesn't exist
+            graphNodes.computeIfAbsent(
+                outputNodeId,
+                id -> Node.datasetField()
+                    .id(id)
+                    .data(new ColumnLineageNodeData(output))
+            );
+
+            // Add edges
+            outEdges.computeIfAbsent(nodeId, k -> new HashSet<>()).add(outputNodeId);
+            inEdges.computeIfAbsent(outputNodeId, k -> new HashSet<>()).add(nodeId);
+        }
+    }
+
+    // Build final nodes with edges
+    Set<Node> nodes = graphNodes.entrySet().stream()
+        .map(entry -> {
+            NodeId nodeId = entry.getKey();
+            Node.Builder builder = entry.getValue();
+            
+            // Add in edges
+            Set<NodeId> nodeInEdges = inEdges.getOrDefault(nodeId, Collections.emptySet());
+            if (!nodeInEdges.isEmpty()) {
+                builder.inEdges(nodeInEdges.stream()
+                    .map(inNodeId -> new Edge(nodeId, inNodeId))
+                    .collect(Collectors.toSet()));
+            }
+            
+            // Add out edges
+            Set<NodeId> nodeOutEdges = outEdges.getOrDefault(nodeId, Collections.emptySet());
+            if (!nodeOutEdges.isEmpty()) {
+                builder.outEdges(nodeOutEdges.stream()
+                    .map(outNodeId -> new Edge(nodeId, outNodeId))
+                    .collect(Collectors.toSet()));
+            }
+            
+            return builder.build();
+        })
+        .collect(Collectors.toSet());
+
+    return new Lineage(ImmutableSortedSet.copyOf(nodes));
   }
 
   private static NodeId toNodeId(ColumnLineageNodeData node, boolean includeVersion) {
