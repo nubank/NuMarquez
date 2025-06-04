@@ -47,58 +47,58 @@ public class ColumnLineageService extends DelegatingDaos.DelegatingColumnLineage
   }
 
   public Lineage lineage(NodeId nodeId, int depth, boolean withDownstream) {
+    // 1. Get initial column nodes
     ColumnNodes columnNodes = getColumnNodes(nodeId);
     if (columnNodes.nodeIds.isEmpty()) {
-      throw new NodeIdNotFoundException("Could not find node");
+        throw new NodeIdNotFoundException("Could not find node");
     }
 
+    // 2. Initialize collections for direct lineage collection
     Set<ColumnLineageNodeData> lineageNodeData = new HashSet<>();
-    Set<UUID> currentLevelFields = new HashSet<>(columnNodes.nodeIds);
     Set<UUID> processedFields = new HashSet<>();
-    int currentDepth = 0;
+    Set<UUID> currentLevelFields = new HashSet<>(columnNodes.nodeIds);
 
-    while (!currentLevelFields.isEmpty() && currentDepth < depth) {
-      // Get direct lineage for current level fields
-      Set<ColumnLineageNodeData> directLineage = 
-          getDirectColumnLineage(new ArrayList<>(currentLevelFields), withDownstream, columnNodes.createdAtUntil);
-      
-      // Add to result set
-      lineageNodeData.addAll(directLineage);
-      
-      // Mark current fields as processed
-      processedFields.addAll(currentLevelFields);
-      
-      // Get next level fields to process
-      currentLevelFields.clear();
-      directLineage.forEach(node -> {
-        // Process input fields for upstream lineage
-        node.getInputFields().forEach(input -> {
-          UUID fieldUuid = datasetFieldDao.findUuid(
-              input.getNamespace(), 
-              input.getDataset(), 
-              input.getField())
-              .orElse(null);
-          if (fieldUuid != null && !processedFields.contains(fieldUuid)) {
-            currentLevelFields.add(fieldUuid);
-          }
-        });
+    // 3. Process each depth level
+    for (int currentDepth = 0; currentDepth < depth && !currentLevelFields.isEmpty(); currentDepth++) {
+        // Get direct lineage for current level fields
+        Set<ColumnLineageNodeData> directLineage = 
+            getDirectColumnLineage(new ArrayList<>(currentLevelFields), withDownstream, columnNodes.createdAtUntil);
         
-        // Process output fields for downstream lineage
-        if (withDownstream) {
-          node.getOutputFields().forEach(output -> {
-            UUID fieldUuid = datasetFieldDao.findUuid(
-                output.getNamespace(), 
-                output.getDataset(), 
-                output.getField())
-                .orElse(null);
-            if (fieldUuid != null && !processedFields.contains(fieldUuid)) {
-              currentLevelFields.add(fieldUuid);
+        // Add to results
+        lineageNodeData.addAll(directLineage);
+        
+        // Mark current fields as processed
+        processedFields.addAll(currentLevelFields);
+        
+        // Get next level fields (only direct relationships)
+        currentLevelFields.clear();
+        directLineage.forEach(node -> {
+            // For upstream lineage, collect only direct input fields
+            node.getInputFields().forEach(input -> {
+                UUID fieldUuid = datasetFieldDao.findUuid(
+                    input.getNamespace(), 
+                    input.getDataset(), 
+                    input.getField())
+                    .orElse(null);
+                if (fieldUuid != null && !processedFields.contains(fieldUuid)) {
+                    currentLevelFields.add(fieldUuid);
+                }
+            });
+            
+            // For downstream lineage, collect only direct output fields
+            if (withDownstream) {
+                node.getOutputFields().forEach(output -> {
+                    UUID fieldUuid = datasetFieldDao.findUuid(
+                        output.getNamespace(), 
+                        output.getDataset(), 
+                        output.getField())
+                        .orElse(null);
+                    if (fieldUuid != null && !processedFields.contains(fieldUuid)) {
+                        currentLevelFields.add(fieldUuid);
+                    }
+                });
             }
-          });
-        }
-      });
-      
-      currentDepth++;
+        });
     }
 
     return toLineage(lineageNodeData, nodeId.hasVersion());

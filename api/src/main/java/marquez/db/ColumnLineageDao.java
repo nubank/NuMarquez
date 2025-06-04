@@ -262,50 +262,117 @@ public interface ColumnLineageDao extends BaseDao {
    * @param createdAtUntil The point in time to get lineage for
    * @return Set of ColumnLineageNodeData representing the direct lineage
    */
-  @SqlQuery(
-    """
-      WITH dataset_fields_view AS (
-        SELECT d.namespace_name as namespace_name, d.name as dataset_name, df.name as field_name, df.type, df.uuid, d.namespace_uuid
+  @SqlQuery("""
+    WITH dataset_fields_view AS (
+        SELECT 
+            d.namespace_name as namespace_name, 
+            d.name as dataset_name, 
+            df.name as field_name, 
+            df.type, 
+            df.uuid, 
+            d.namespace_uuid
         FROM dataset_fields df
         INNER JOIN datasets_view d ON d.uuid = df.dataset_uuid
-      )
-      SELECT
-          output_fields.namespace_name,
-          output_fields.dataset_name,
-          output_fields.field_name,
-          output_fields.type,
-          ARRAY_AGG(DISTINCT ARRAY[
-            input_fields.namespace_name,
-            input_fields.dataset_name,
-            CAST(cl.input_dataset_version_uuid AS VARCHAR),
-            input_fields.field_name,
-            cl.transformation_description,
-            cl.transformation_type
-          ]) AS inputFields,
-          ARRAY_AGG(DISTINCT ARRAY[
+    ),
+    -- For upstream lineage: find direct input fields
+    upstream_input_fields AS (
+        SELECT DISTINCT input_dataset_field_uuid
+        FROM tmp_column_lineage_latest
+        WHERE output_dataset_field_uuid IN (<datasetFieldUuids>)
+            AND created_at <= :createdAtUntil
+    ),
+    -- For upstream lineage: get direct upstream nodes
+    upstream_lineage AS (
+        SELECT DISTINCT
             output_fields.namespace_name,
             output_fields.dataset_name,
-            CAST(cl.output_dataset_version_uuid AS VARCHAR),
             output_fields.field_name,
-            cl.transformation_description,
-            cl.transformation_type
-          ]) FILTER (WHERE cl.output_dataset_field_uuid IS NOT NULL) AS outputFields,
-          cl.output_dataset_version_uuid as dataset_version_uuid
-      FROM tmp_column_lineage_latest cl
-      INNER JOIN dataset_fields_view output_fields ON cl.output_dataset_field_uuid = output_fields.uuid
-      INNER JOIN dataset_symlinks ds_output ON ds_output.namespace_uuid = output_fields.namespace_uuid AND ds_output.name = output_fields.dataset_name
-      LEFT JOIN dataset_fields_view input_fields ON cl.input_dataset_field_uuid = input_fields.uuid
-      INNER JOIN dataset_symlinks ds_input ON ds_input.namespace_uuid = input_fields.namespace_uuid AND ds_input.name = input_fields.dataset_name
-      WHERE output_fields.uuid IN (<datasetFieldUuids>)
-        AND ds_output.is_primary is true 
-        AND ds_input.is_primary is true
-        AND cl.created_at <= :createdAtUntil
-      GROUP BY
-          output_fields.namespace_name,
-          output_fields.dataset_name,
-          output_fields.field_name,
-          output_fields.type,
-          cl.output_dataset_version_uuid
+            output_fields.type,
+            ARRAY_AGG(DISTINCT ARRAY[
+                input_fields.namespace_name,
+                input_fields.dataset_name,
+                CAST(cl.input_dataset_version_uuid AS VARCHAR),
+                input_fields.field_name,
+                cl.transformation_description,
+                cl.transformation_type
+            ]) AS inputFields,
+            ARRAY[]::text[][] AS outputFields,
+            cl.output_dataset_version_uuid as dataset_version_uuid
+        FROM tmp_column_lineage_latest cl
+        INNER JOIN dataset_fields_view output_fields 
+            ON cl.output_dataset_field_uuid = output_fields.uuid
+        INNER JOIN dataset_symlinks ds_output 
+            ON ds_output.namespace_uuid = output_fields.namespace_uuid 
+            AND ds_output.name = output_fields.dataset_name
+        INNER JOIN upstream_input_fields uif 
+            ON cl.input_dataset_field_uuid = uif.input_dataset_field_uuid
+        INNER JOIN dataset_fields_view input_fields 
+            ON cl.input_dataset_field_uuid = input_fields.uuid
+        INNER JOIN dataset_symlinks ds_input 
+            ON ds_input.namespace_uuid = input_fields.namespace_uuid 
+            AND ds_input.name = input_fields.dataset_name
+        WHERE output_fields.uuid IN (<datasetFieldUuids>)
+            AND ds_output.is_primary is true 
+            AND ds_input.is_primary is true
+        GROUP BY
+            output_fields.namespace_name,
+            output_fields.dataset_name,
+            output_fields.field_name,
+            output_fields.type,
+            cl.output_dataset_version_uuid
+    ),
+    -- For downstream lineage: find direct output fields
+    downstream_output_fields AS (
+        SELECT DISTINCT output_dataset_field_uuid
+        FROM tmp_column_lineage_latest
+        WHERE input_dataset_field_uuid IN (<datasetFieldUuids>)
+            AND created_at <= :createdAtUntil
+    ),
+    -- For downstream lineage: get direct downstream nodes
+    downstream_lineage AS (
+        SELECT DISTINCT
+            input_fields.namespace_name,
+            input_fields.dataset_name,
+            input_fields.field_name,
+            input_fields.type,
+            ARRAY[]::text[][] AS inputFields,
+            ARRAY_AGG(DISTINCT ARRAY[
+                output_fields.namespace_name,
+                output_fields.dataset_name,
+                CAST(cl.output_dataset_version_uuid AS VARCHAR),
+                output_fields.field_name,
+                cl.transformation_description,
+                cl.transformation_type
+            ]) AS outputFields,
+            cl.output_dataset_version_uuid as dataset_version_uuid
+        FROM tmp_column_lineage_latest cl
+        INNER JOIN dataset_fields_view input_fields 
+            ON cl.input_dataset_field_uuid = input_fields.uuid
+        INNER JOIN dataset_symlinks ds_input 
+            ON ds_input.namespace_uuid = input_fields.namespace_uuid 
+            AND ds_input.name = input_fields.dataset_name
+        INNER JOIN downstream_output_fields dof 
+            ON cl.output_dataset_field_uuid = dof.output_dataset_field_uuid
+        INNER JOIN dataset_fields_view output_fields 
+            ON cl.output_dataset_field_uuid = output_fields.uuid
+        INNER JOIN dataset_symlinks ds_output 
+            ON ds_output.namespace_uuid = output_fields.namespace_uuid 
+            AND ds_output.name = output_fields.dataset_name
+        WHERE input_fields.uuid IN (<datasetFieldUuids>)
+            AND :withDownstream
+            AND ds_input.is_primary is true
+            AND ds_output.is_primary is true
+        GROUP BY
+            input_fields.namespace_name,
+            input_fields.dataset_name,
+            input_fields.field_name,
+            input_fields.type,
+            cl.output_dataset_version_uuid
+    )
+    -- Combine results
+    SELECT * FROM upstream_lineage
+    UNION ALL
+    SELECT * FROM downstream_lineage
     """)
   Set<ColumnLineageNodeData> getDirectColumnLineage(
       @BindList(onEmpty = NULL_STRING) List<UUID> datasetFieldUuids,
