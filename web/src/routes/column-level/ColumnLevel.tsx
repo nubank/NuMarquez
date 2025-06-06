@@ -10,7 +10,7 @@ import { ZoomControls } from './ZoomControls'
 import { bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
 import { createElkNodes } from './layout'
-import { fetchColumnLineage } from '../../store/actionCreators'
+import { fetchColumnLineage, resetColumnLineage } from '../../store/actionCreators'
 import { trackEvent } from '../../components/ga4'
 import { useCallbackRef } from '../../helpers/hooks'
 import { useParams, useSearchParams } from 'react-router-dom'
@@ -26,6 +26,7 @@ interface StateProps {
 
 interface DispatchProps {
   fetchColumnLineage: typeof fetchColumnLineage
+  resetColumnLineage: typeof resetColumnLineage
 }
 
 type ColumnLevelProps = StateProps & DispatchProps
@@ -35,6 +36,7 @@ const zoomOutFactor = 1 / zoomInFactor
 
 const ColumnLevel: React.FC<ColumnLevelProps> = ({
   fetchColumnLineage: fetchColumnLineage,
+  resetColumnLineage: resetColumnLineage,
   columnLineage: columnLineage,
   isLoading: isLoading,
 }: ColumnLevelProps) => {
@@ -46,6 +48,9 @@ const ColumnLevel: React.FC<ColumnLevelProps> = ({
     searchParams.get('withDownstream') === 'true'
   )
 
+  // Estado para controlar mudanças de dataset
+  const [prevDataset, setPrevDataset] = useState<string | null>(null)
+
   const graphControls = useRef<ZoomPanControls>()
 
   useEffect(() => {
@@ -54,9 +59,24 @@ const ColumnLevel: React.FC<ColumnLevelProps> = ({
 
   useEffect(() => {
     if (name && namespace) {
+      const currentDataset = `${namespace}:${name}`
+
+      // Se mudou de dataset, limpa o estado anterior
+      if (prevDataset && prevDataset !== currentDataset) {
+        console.log(
+          'Dataset changed from',
+          prevDataset,
+          'to',
+          currentDataset,
+          '- clearing previous lineage data'
+        )
+        resetColumnLineage()
+      }
+
+      setPrevDataset(currentDataset)
       fetchColumnLineage('DATASET', namespace, name, depth, withDownstream)
     }
-  }, [name, namespace, depth, withDownstream])
+  }, [name, namespace, depth, withDownstream, prevDataset])
 
   if (!columnLineage) {
     return <div />
@@ -167,6 +187,7 @@ const mapDispatchToProps = (dispatch: Redux.Dispatch) =>
   bindActionCreators(
     {
       fetchColumnLineage: fetchColumnLineage,
+      resetColumnLineage: resetColumnLineage,
     },
     dispatch
   )

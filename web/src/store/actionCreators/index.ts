@@ -549,6 +549,10 @@ export const resetLineage = () => ({
   type: actionTypes.RESET_LINEAGE,
 })
 
+export const resetColumnLineage = () => ({
+  type: actionTypes.RESET_COLUMN_LINEAGE,
+})
+
 export const setLineageGraphDepth = (depth: number) => ({
   type: actionTypes.SET_LINEAGE_GRAPH_DEPTH,
   payload: depth,

@@ -59,12 +59,26 @@ export const createElkNodes = (
 
   const graph = columnLineageGraph.graph.filter((node) => !!node.data)
 
+  // DEBUG: Log para verificar dados do backend
+  console.log('=== DEBUG COLUMN LINEAGE ===')
+  console.log(
+    'Raw graph from backend:',
+    graph.map((n) => `${n.data.namespace}:${n.data.dataset}`)
+  )
+
   const connectedNodes = findConnectedNodes(graph, currentColumn)
+  console.log(
+    'Connected nodes:',
+    connectedNodes.map((n) => `${n.data?.namespace}:${n.data?.dataset}`)
+  )
 
   for (const node of graph) {
     const namespace = node.data.namespace
     const dataset = node.data.dataset
     const column = node.data.field
+
+    // DEBUG: Log cada dataset sendo processado
+    console.log(`Processing dataset: ${namespace}:${dataset}`)
 
     edges.push(
       ...node.outEdges.map((edge) => {
@@ -82,6 +96,8 @@ export const createElkNodes = (
 
     const datasetNode = nodes.find((n) => n.id === `datasetField:${namespace}:${dataset}`)
     if (!datasetNode) {
+      // DEBUG: Log quando um novo dataset node é criado
+      console.log(`Creating new dataset node: ${namespace}:${dataset}`)
       nodes.push({
         id: `datasetField:${namespace}:${dataset}`,
         kind: 'dataset',
@@ -105,6 +121,8 @@ export const createElkNodes = (
         ],
       })
     } else {
+      // DEBUG: Log quando uma coluna é adicionada a um dataset existente
+      console.log(`Adding column to existing dataset: ${namespace}:${dataset} - column: ${column}`)
       datasetNode.children?.push({
         id: node.id,
         width: 200,
@@ -118,5 +136,12 @@ export const createElkNodes = (
       })
     }
   }
+
+  console.log(
+    'Final nodes created:',
+    nodes.map((n) => (n.data ? `${n.data.namespace}:${n.data.dataset}` : 'no data'))
+  )
+  console.log('=== END DEBUG ===')
+
   return { nodes, edges }
 }

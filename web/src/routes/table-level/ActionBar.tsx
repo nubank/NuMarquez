@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import { ArrowBackIosRounded, Refresh } from '@mui/icons-material'
 import {
   Box,
   CircularProgress,
@@ -8,14 +8,14 @@ import {
   Switch,
   TextField,
 } from '@mui/material'
-import { ArrowBackIosRounded, Refresh } from '@mui/icons-material'
 import { HEADER_HEIGHT, theme } from '../../helpers/theme'
-import { fetchLineage, fetchFilteredLineage } from '../../store/actionCreators'
+import { fetchFilteredLineage, fetchLineage } from '../../store/actionCreators'
 import { trackEvent } from '../../components/ga4'
 import { truncateText } from '../../helpers/text'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import MQTooltip from '../../components/core/tooltip/MQTooltip'
 import MqText from '../../components/core/text/MqText'
+import React, { useCallback, useEffect, useState } from 'react'
 
 interface ActionBarProps {
   nodeType: 'DATASET' | 'JOB'
@@ -129,10 +129,8 @@ export const ActionBar = ({
 
     if (isFull === false) {
       fetchFilteredLineage(nodeType, namespace, name, requestedDepth)
-
     } else {
       fetchLineage(nodeType, namespace, name, requestedDepth, true)
-
     }
 
     setDepth(requestedDepth)
@@ -157,12 +155,15 @@ export const ActionBar = ({
     [setIsFull, searchParams, setSearchParams]
   )
 
-  const handleHideColumnNamesToggle = useCallback((checked: boolean) => {
-    setIsCompact(checked)
-    searchParams.set('isCompact', checked.toString())
-    setSearchParams(searchParams)
-    trackEvent('ActionBar', 'Toggle Hide Column Names', checked.toString())
-  }, [setIsCompact, searchParams, setSearchParams])
+  const handleHideColumnNamesToggle = useCallback(
+    (checked: boolean) => {
+      setIsCompact(checked)
+      searchParams.set('isCompact', checked.toString())
+      setSearchParams(searchParams)
+      trackEvent('ActionBar', 'Toggle Hide Column Names', checked.toString())
+    },
+    [setIsCompact, searchParams, setSearchParams]
+  )
 
   return (
     <Box
