@@ -253,14 +253,13 @@ public interface ColumnLineageDao extends BaseDao {
           List<Pair<String, String>> datasets);
 
   /**
-   * Fetch all of the column lineage nodes that are directly connected to the input dataset fields.
-   * This returns a single layer of lineage using column lineage as edges. Fields that have
-   * no input or output lineage will have no results.
+   * Fetch upstream lineage nodes that directly produce data TO the input dataset fields.
+   * This returns fields that are direct producers of the given fields.
+   * Only follows INPUT edges to the given fields (direct upstream producers).
    *
-   * @param datasetFieldUuids The UUIDs of the dataset fields to get lineage for
-   * @param withDownstream Whether to include downstream lineage
+   * @param datasetFieldUuids The UUIDs of the dataset fields to get upstream producers for
    * @param createdAtUntil The point in time to get lineage for
-   * @return Set of ColumnLineageNodeData representing the direct lineage
+   * @return Set of ColumnLineageNodeData representing the direct upstream producer fields
    */
   @SqlQuery("""
     WITH dataset_fields_view AS (
@@ -274,15 +273,74 @@ public interface ColumnLineageDao extends BaseDao {
         FROM dataset_fields df
         INNER JOIN datasets_view d ON d.uuid = df.dataset_uuid
     ),
-    -- For upstream lineage: find direct input fields
-    upstream_input_fields AS (
-        SELECT DISTINCT input_dataset_field_uuid
-        FROM tmp_column_lineage_latest
-        WHERE output_dataset_field_uuid IN (<datasetFieldUuids>)
-            AND created_at <= :createdAtUntil
+    -- Find upstream producer fields: fields that produce data TO our target fields
+    upstream_producers AS (
+        SELECT DISTINCT
+            input_fields.namespace_name,
+            input_fields.dataset_name,
+            input_fields.field_name,
+            input_fields.type,
+            ARRAY[]::text[][] AS inputFields,
+            ARRAY_AGG(DISTINCT ARRAY[
+                output_fields.namespace_name,
+                output_fields.dataset_name,
+                CAST(cl.output_dataset_version_uuid AS VARCHAR),
+                output_fields.field_name,
+                cl.transformation_description,
+                cl.transformation_type
+            ]) AS outputFields,
+            cl.input_dataset_version_uuid as dataset_version_uuid
+        FROM tmp_column_lineage_latest cl
+        INNER JOIN dataset_fields_view input_fields 
+            ON cl.input_dataset_field_uuid = input_fields.uuid
+        INNER JOIN dataset_symlinks ds_input 
+            ON ds_input.namespace_uuid = input_fields.namespace_uuid 
+            AND ds_input.name = input_fields.dataset_name
+        INNER JOIN dataset_fields_view output_fields 
+            ON cl.output_dataset_field_uuid = output_fields.uuid
+        INNER JOIN dataset_symlinks ds_output 
+            ON ds_output.namespace_uuid = output_fields.namespace_uuid 
+            AND ds_output.name = output_fields.dataset_name
+        WHERE cl.output_dataset_field_uuid IN (<datasetFieldUuids>)
+            AND cl.created_at <= :createdAtUntil
+            AND ds_input.is_primary is true
+            AND ds_output.is_primary is true
+        GROUP BY
+            input_fields.namespace_name,
+            input_fields.dataset_name,
+            input_fields.field_name,
+            input_fields.type,
+            cl.input_dataset_version_uuid
+    )
+    SELECT * FROM upstream_producers
+  """)
+  Set<ColumnLineageNodeData> getUpstreamColumnLineage(
+      @BindList(onEmpty = NULL_STRING) List<UUID> datasetFieldUuids,
+      Instant createdAtUntil);
+
+  /**
+   * Fetch downstream lineage nodes that directly consume data FROM the input dataset fields.
+   * This returns fields that are direct consumers of the given fields.
+   * Only follows OUTPUT edges from the given fields (direct downstream consumers).
+   *
+   * @param datasetFieldUuids The UUIDs of the dataset fields to get downstream consumers for
+   * @param createdAtUntil The point in time to get lineage for
+   * @return Set of ColumnLineageNodeData representing the direct downstream consumer fields
+   */
+  @SqlQuery("""
+    WITH dataset_fields_view AS (
+        SELECT 
+            d.namespace_name as namespace_name, 
+            d.name as dataset_name, 
+            df.name as field_name, 
+            df.type, 
+            df.uuid, 
+            d.namespace_uuid
+        FROM dataset_fields df
+        INNER JOIN datasets_view d ON d.uuid = df.dataset_uuid
     ),
-    -- For upstream lineage: get direct upstream nodes
-    upstream_lineage AS (
+    -- Find downstream consumer fields: fields that consume data FROM our target fields
+    downstream_consumers AS (
         SELECT DISTINCT
             output_fields.namespace_name,
             output_fields.dataset_name,
@@ -304,15 +362,14 @@ public interface ColumnLineageDao extends BaseDao {
         INNER JOIN dataset_symlinks ds_output 
             ON ds_output.namespace_uuid = output_fields.namespace_uuid 
             AND ds_output.name = output_fields.dataset_name
-        INNER JOIN upstream_input_fields uif 
-            ON cl.input_dataset_field_uuid = uif.input_dataset_field_uuid
         INNER JOIN dataset_fields_view input_fields 
             ON cl.input_dataset_field_uuid = input_fields.uuid
         INNER JOIN dataset_symlinks ds_input 
             ON ds_input.namespace_uuid = input_fields.namespace_uuid 
             AND ds_input.name = input_fields.dataset_name
-        WHERE output_fields.uuid IN (<datasetFieldUuids>)
-            AND ds_output.is_primary is true 
+        WHERE cl.input_dataset_field_uuid IN (<datasetFieldUuids>)
+            AND cl.created_at <= :createdAtUntil
+            AND ds_output.is_primary is true
             AND ds_input.is_primary is true
         GROUP BY
             output_fields.namespace_name,
@@ -320,60 +377,23 @@ public interface ColumnLineageDao extends BaseDao {
             output_fields.field_name,
             output_fields.type,
             cl.output_dataset_version_uuid
-    ),
-    -- For downstream lineage: find direct output fields
-    downstream_output_fields AS (
-        SELECT DISTINCT output_dataset_field_uuid
-        FROM tmp_column_lineage_latest
-        WHERE input_dataset_field_uuid IN (<datasetFieldUuids>)
-            AND created_at <= :createdAtUntil
-    ),
-    -- For downstream lineage: get direct downstream nodes
-    downstream_lineage AS (
-        SELECT DISTINCT
-            input_fields.namespace_name,
-            input_fields.dataset_name,
-            input_fields.field_name,
-            input_fields.type,
-            ARRAY[]::text[][] AS inputFields,
-            ARRAY_AGG(DISTINCT ARRAY[
-                output_fields.namespace_name,
-                output_fields.dataset_name,
-                CAST(cl.output_dataset_version_uuid AS VARCHAR),
-                output_fields.field_name,
-                cl.transformation_description,
-                cl.transformation_type
-            ]) AS outputFields,
-            cl.output_dataset_version_uuid as dataset_version_uuid
-        FROM tmp_column_lineage_latest cl
-        INNER JOIN dataset_fields_view input_fields 
-            ON cl.input_dataset_field_uuid = input_fields.uuid
-        INNER JOIN dataset_symlinks ds_input 
-            ON ds_input.namespace_uuid = input_fields.namespace_uuid 
-            AND ds_input.name = input_fields.dataset_name
-        INNER JOIN downstream_output_fields dof 
-            ON cl.output_dataset_field_uuid = dof.output_dataset_field_uuid
-        INNER JOIN dataset_fields_view output_fields 
-            ON cl.output_dataset_field_uuid = output_fields.uuid
-        INNER JOIN dataset_symlinks ds_output 
-            ON ds_output.namespace_uuid = output_fields.namespace_uuid 
-            AND ds_output.name = output_fields.dataset_name
-        WHERE input_fields.uuid IN (<datasetFieldUuids>)
-            AND :withDownstream
-            AND ds_input.is_primary is true
-            AND ds_output.is_primary is true
-        GROUP BY
-            input_fields.namespace_name,
-            input_fields.dataset_name,
-            input_fields.field_name,
-            input_fields.type,
-            cl.output_dataset_version_uuid
     )
-    -- Combine results
-    SELECT * FROM upstream_lineage
-    UNION ALL
-    SELECT * FROM downstream_lineage
-    """)
+    SELECT * FROM downstream_consumers
+  """)
+  Set<ColumnLineageNodeData> getDownstreamColumnLineage(
+      @BindList(onEmpty = NULL_STRING) List<UUID> datasetFieldUuids,
+      Instant createdAtUntil);
+
+  /**
+   * Fetch all of the column lineage nodes that are directly connected to the input dataset fields.
+   * This returns a single layer of lineage using column lineage as edges. Fields that have
+   * no input or output lineage will have no results.
+   *
+   * @param datasetFieldUuids The UUIDs of the dataset fields to get lineage for
+   * @param withDownstream Whether to include downstream lineage
+   * @param createdAtUntil The point in time to get lineage for
+   * @return Set of ColumnLineageNodeData representing the direct lineage
+   */
   Set<ColumnLineageNodeData> getDirectColumnLineage(
       @BindList(onEmpty = NULL_STRING) List<UUID> datasetFieldUuids,
       boolean withDownstream,
