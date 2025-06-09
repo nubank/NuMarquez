@@ -66,7 +66,7 @@ public final class DbMigration {
     if (hasPendingDbMigrations(flyway)) {
       log.error(
           "Failed to apply migration! You must apply the migration manually using the flyway "
-              + "command 'flyway migrate', or set 'MIGRATE_ON_STARTUP=true' to automatically apply "
+              + "command 'flyway migrate', or set 'MIGRATE_ON_STARTUP=false' to automatically apply "
               + "migrations to your database. We recommend you view database changes before "
               + "applying a new migration with 'flyway info'. You can download the flyway CLI "
               + "at 'https://flywaydb.org/download'");
