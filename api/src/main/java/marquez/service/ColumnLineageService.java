@@ -43,24 +43,69 @@ import org.apache.commons.lang3.tuple.Pair;
 @Slf4j
 public class ColumnLineageService extends DelegatingDaos.DelegatingColumnLineageDao {
   private final DatasetFieldDao datasetFieldDao;
+  private final FederatedLineageConfig federatedConfig;
 
   public ColumnLineageService(ColumnLineageDao dao, DatasetFieldDao datasetFieldDao) {
-    super(dao);
-    this.datasetFieldDao = datasetFieldDao;
+    this(dao, datasetFieldDao, null);
   }
 
+  public ColumnLineageService(ColumnLineageDao dao, DatasetFieldDao datasetFieldDao, 
+                             FederatedLineageConfig federatedConfig) {
+    super(dao);
+    this.datasetFieldDao = datasetFieldDao;
+    this.federatedConfig = federatedConfig;
+  }
+
+  /**
+   * Enhanced lineage method that automatically uses the best available approach:
+   * 1. Optimized federated lineage (if configured and unified_column_lineage view exists)
+   * 2. Single optimized recursive query
+   * 3. Fallback to iterative approach
+   */
   public Lineage lineage(NodeId nodeId, int depth, boolean withDownstream) {
-    // 1. Get initial column nodes
     ColumnNodes columnNodes = getColumnNodes(nodeId);
     if (columnNodes.nodeIds.isEmpty()) {
         throw new NodeIdNotFoundException("Could not find node");
     }
 
-    // 2. Fetch upstream and downstream lineage separately (like LineageService.directLineage)
+    Set<ColumnLineageNodeData> allLineageData;
+
+    try {
+      // Try optimized federated approach first if configured
+      if (federatedConfig != null && federatedConfig.isEnabled() && federatedConfig.isValid()) {
+        log.debug("Using optimized federated lineage for node: {}", nodeId);
+        allLineageData = super.getOptimizedLineageWithFederation(
+            new ArrayList<>(columnNodes.nodeIds), depth, withDownstream, columnNodes.createdAtUntil);
+        
+        if (!allLineageData.isEmpty()) {
+          log.debug("Successfully retrieved {} nodes using federated lineage", allLineageData.size());
+          return toLineage(allLineageData, nodeId.hasVersion());
+        }
+      }
+    } catch (Exception e) {
+      log.warn("Federated lineage query failed, falling back to standard approach: {}", e.getMessage());
+    }
+
+    try {
+      // Try single optimized query approach
+      log.debug("Using optimized single-query lineage for node: {}", nodeId);
+      allLineageData = executeOptimizedLineageQuery(
+          new HashSet<>(columnNodes.nodeIds), depth, withDownstream, columnNodes.createdAtUntil);
+      
+      if (!allLineageData.isEmpty()) {
+        log.debug("Successfully retrieved {} nodes using optimized query", allLineageData.size());
+        return toLineage(allLineageData, nodeId.hasVersion());
+      }
+    } catch (Exception e) {
+      log.warn("Optimized lineage query failed, falling back to iterative approach: {}", e.getMessage());
+    }
+
+    // Fallback to original iterative approach
+    log.debug("Using iterative lineage approach for node: {}", nodeId);
     Set<ColumnLineageNodeData> upstreamLineage = fetchDirectColumnLineage(
         new HashSet<>(columnNodes.nodeIds), depth, true, columnNodes.createdAtUntil);
     
-    Set<ColumnLineageNodeData> allLineageData = new HashSet<>(upstreamLineage);
+    allLineageData = new HashSet<>(upstreamLineage);
     
     if (withDownstream) {
         Set<ColumnLineageNodeData> downstreamLineage = fetchDirectColumnLineage(
@@ -68,9 +113,7 @@ public class ColumnLineageService extends DelegatingDaos.DelegatingColumnLineage
         allLineageData.addAll(downstreamLineage);
     }
 
-    log.debug("Completed lineage traversal with {} total nodes", allLineageData.size());
-
-    // 3. Build and return the lineage graph
+    log.debug("Completed iterative lineage traversal with {} total nodes", allLineageData.size());
     return toLineage(allLineageData, nodeId.hasVersion());
   }
 
@@ -135,7 +178,91 @@ public class ColumnLineageService extends DelegatingDaos.DelegatingColumnLineage
     return new HashSet<>(allNodesMap.values());
   }
 
+  /**
+   * Enhanced lineage method that leverages postgres-fdw for cross-database lineage.
+   * This method can query lineage data across multiple federated databases.
+   */
+  public Lineage federatedLineage(NodeId nodeId, int depth, boolean withDownstream, List<String> federatedSources) {
+    // 1. Get initial column nodes
+    ColumnNodes columnNodes = getColumnNodes(nodeId);
+    if (columnNodes.nodeIds.isEmpty()) {
+        throw new NodeIdNotFoundException("Could not find node");
+    }
 
+    // 2. Fetch lineage using federated queries that can span multiple databases
+    Set<ColumnLineageNodeData> allLineageData = fetchFederatedColumnLineage(
+        new HashSet<>(columnNodes.nodeIds), depth, withDownstream, columnNodes.createdAtUntil, federatedSources);
+
+    log.debug("Completed federated lineage traversal with {} total nodes", allLineageData.size());
+
+    // 3. Build and return the lineage graph
+    return toLineage(allLineageData, nodeId.hasVersion());
+  }
+
+  /**
+   * Fetch column lineage across federated databases using postgres-fdw.
+   * This method can execute a single query that spans multiple database instances.
+   */
+  private Set<ColumnLineageNodeData> fetchFederatedColumnLineage(
+      Set<UUID> initialFieldUuids, int maxDepth, boolean withDownstream, 
+      Instant createdAtUntil, List<String> federatedSources) {
+    
+    // Build a query that uses UNION ALL to combine lineage from multiple sources
+    StringBuilder federatedQuery = new StringBuilder();
+    federatedQuery.append("WITH federated_lineage AS (");
+    
+    // Add local lineage
+    federatedQuery.append(buildLocalLineageQuery(initialFieldUuids, maxDepth, withDownstream, createdAtUntil));
+    
+    // Add federated sources
+    for (String source : federatedSources) {
+      federatedQuery.append(" UNION ALL ");
+      federatedQuery.append(buildFederatedSourceQuery(source, initialFieldUuids, maxDepth, withDownstream, createdAtUntil));
+    }
+    
+    federatedQuery.append(") SELECT * FROM federated_lineage");
+    
+    // Execute the federated query through DAO
+    try {
+      log.debug("Executing federated lineage query across {} sources", federatedSources.size());
+      return super.executeFederatedLineageQuery(federatedQuery.toString());
+    } catch (Exception e) {
+      log.warn("Federated query execution failed: {}", e.getMessage());
+      // Fallback to local lineage only
+      return fetchDirectColumnLineage(initialFieldUuids, maxDepth, true, createdAtUntil);
+    }
+  }
+
+  private String buildLocalLineageQuery(Set<UUID> fieldUuids, int depth, boolean withDownstream, Instant createdAt) {
+    return String.format("""
+        SELECT 
+          df.namespace_name, df.dataset_name, df.field_name, df.type,
+          cl.transformation_description, cl.transformation_type,
+          'local' as source_origin
+        FROM column_lineage_recursive cl
+        JOIN dataset_fields_view df ON cl.output_dataset_field_uuid = df.uuid
+        WHERE cl.output_dataset_field_uuid IN (%s) 
+        AND cl.created_at <= '%s'
+        """, 
+        fieldUuids.stream().map(UUID::toString).collect(Collectors.joining("','")), 
+        createdAt.toString());
+  }
+
+  private String buildFederatedSourceQuery(String source, Set<UUID> fieldUuids, int depth, boolean withDownstream, Instant createdAt) {
+    return String.format("""
+        SELECT 
+          df.namespace_name, df.dataset_name, df.field_name, df.type,
+          cl.transformation_description, cl.transformation_type,
+          '%s' as source_origin
+        FROM %s.column_lineage_recursive cl
+        JOIN %s.dataset_fields_view df ON cl.output_dataset_field_uuid = df.uuid
+        WHERE cl.output_dataset_field_uuid IN (%s)
+        AND cl.created_at <= '%s'
+        """, 
+        source, source, source,
+        fieldUuids.stream().map(UUID::toString).collect(Collectors.joining("','")), 
+        createdAt.toString());
+  }
 
   private Lineage toLineage(Set<ColumnLineageNodeData> lineageNodeData, boolean includeVersion) {
     Set<Node> nodes = new LinkedHashSet<>();
@@ -353,6 +480,125 @@ public class ColumnLineageService extends DelegatingDaos.DelegatingColumnLineage
     datasets.stream()
         .filter(dataset -> datasetLineage.containsKey(dataset))
         .forEach(dataset -> dataset.setColumnLineage(datasetLineage.get(dataset)));
+  }
+
+  /**
+   * Optimized lineage method that uses a single recursive query instead of multiple iterations.
+   * This leverages postgres-fdw's ability to push computation to remote servers.
+   */
+  public Lineage optimizedLineage(NodeId nodeId, int depth, boolean withDownstream) {
+    ColumnNodes columnNodes = getColumnNodes(nodeId);
+    if (columnNodes.nodeIds.isEmpty()) {
+        throw new NodeIdNotFoundException("Could not find node");
+    }
+
+    // Execute a single optimized query that handles all depth traversal in the database
+    Set<ColumnLineageNodeData> allLineageData = executeOptimizedLineageQuery(
+        new HashSet<>(columnNodes.nodeIds), depth, withDownstream, columnNodes.createdAtUntil);
+
+    log.debug("Completed optimized lineage traversal with {} total nodes", allLineageData.size());
+    return toLineage(allLineageData, nodeId.hasVersion());
+  }
+
+  /**
+   * Execute a single database query that handles all lineage traversal.
+   * This reduces network round trips and allows postgres-fdw to optimize query execution.
+   */
+  private Set<ColumnLineageNodeData> executeOptimizedLineageQuery(
+      Set<UUID> initialFieldUuids, int maxDepth, boolean withDownstream, Instant createdAtUntil) {
+    
+    String optimizedQuery = buildOptimizedLineageQuery(initialFieldUuids, maxDepth, withDownstream, createdAtUntil);
+    
+    try {
+      log.debug("Executing optimized lineage query for {} fields", initialFieldUuids.size());
+      return super.executeCustomLineageQuery(optimizedQuery);
+    } catch (Exception e) {
+      log.warn("Custom query execution failed: {}", e.getMessage());
+      // Fallback to iterative approach
+      return fetchDirectColumnLineage(initialFieldUuids, maxDepth, true, createdAtUntil);
+    }
+  }
+
+  private String buildOptimizedLineageQuery(Set<UUID> fieldUuids, int depth, boolean withDownstream, Instant createdAt) {
+    return String.format("""
+        WITH RECURSIVE 
+          -- Include federated tables if available
+          all_column_lineage AS (
+            -- Local lineage
+            SELECT * FROM column_lineage WHERE created_at <= '%s'
+            %s
+          ),
+          lineage_traversal AS (
+            -- Base case: starting fields
+            SELECT 
+              output_dataset_field_uuid,
+              input_dataset_field_uuid,
+              transformation_description,
+              transformation_type,
+              0 as depth,
+              ARRAY[output_dataset_field_uuid] as visited_path
+            FROM all_column_lineage 
+            WHERE output_dataset_field_uuid IN (%s)
+            
+            UNION ALL
+            
+            -- Recursive case: traverse lineage
+            SELECT 
+              cl.output_dataset_field_uuid,
+              cl.input_dataset_field_uuid,
+              cl.transformation_description,
+              cl.transformation_type,
+              lt.depth + 1,
+              lt.visited_path || cl.output_dataset_field_uuid
+            FROM all_column_lineage cl
+            JOIN lineage_traversal lt ON (
+              %s -- Direction conditions
+            )
+            WHERE lt.depth < %d
+              AND NOT cl.output_dataset_field_uuid = ANY(lt.visited_path) -- Cycle detection
+          )
+        SELECT DISTINCT
+          df.namespace_name,
+          df.dataset_name, 
+          df.field_name,
+          df.type,
+          lt.transformation_description,
+          lt.transformation_type
+        FROM lineage_traversal lt
+        JOIN dataset_fields_view df ON lt.output_dataset_field_uuid = df.uuid
+        """, 
+        createdAt.toString(),
+        buildFederatedUnionClauses(), // Add federated sources
+        fieldUuids.stream().map(u -> "'" + u.toString() + "'").collect(Collectors.joining(",")),
+        buildDirectionConditions(withDownstream),
+        depth - 1);
+  }
+
+  private String buildFederatedUnionClauses() {
+    if (federatedConfig == null || !federatedConfig.isEnabled() || 
+        federatedConfig.getForeignTableMappings() == null) {
+      return "";
+    }
+    
+    StringBuilder unions = new StringBuilder();
+    for (FederatedLineageConfig.ForeignTableMapping mapping : federatedConfig.getForeignTableMappings()) {
+      unions.append(String.format("""
+          UNION ALL 
+          SELECT * FROM %s 
+          """, mapping.getLocalTableName()));
+    }
+    return unions.toString();
+  }
+
+  private String buildDirectionConditions(boolean withDownstream) {
+    if (withDownstream) {
+      return """
+          (cl.output_dataset_field_uuid = lt.input_dataset_field_uuid  -- upstream
+           OR cl.input_dataset_field_uuid = lt.output_dataset_field_uuid) -- downstream
+          """;
+    } else {
+      return "cl.output_dataset_field_uuid = lt.input_dataset_field_uuid"; // upstream only
+    }
   }
 
   private record ColumnNodes(Instant createdAtUntil, List<UUID> nodeIds) {}
