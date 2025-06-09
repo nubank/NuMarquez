@@ -42,7 +42,7 @@ db:
 #   cleanDisabled: true
 
 # Enables database migration on startup (default: true)
-migrateOnStartup: ${MIGRATE_ON_STARTUP:-true}
+migrateOnStartup: ${MIGRATE_ON_STARTUP:-false}
 
 # Enabled the Graphql endpoint
 graphql:

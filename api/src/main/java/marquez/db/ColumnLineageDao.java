@@ -398,4 +398,112 @@ public interface ColumnLineageDao extends BaseDao {
       @BindList(onEmpty = NULL_STRING) List<UUID> datasetFieldUuids,
       boolean withDownstream,
       Instant createdAtUntil);
+
+  /**
+   * Execute a federated lineage query across multiple postgres-fdw connected databases.
+   * This method allows querying lineage data from multiple federated sources in a single query.
+   * Implementation should use Jdbi Handle to execute dynamic SQL.
+   */
+  default Set<ColumnLineageNodeData> executeFederatedLineageQuery(String federatedQuery) {
+    return getHandle().createQuery(federatedQuery)
+        .mapTo(ColumnLineageNodeData.class)
+        .set();
+  }
+
+  /**
+   * Execute a custom optimized lineage query that leverages postgres-fdw capabilities.
+   * This method supports complex recursive queries that can span federated databases.
+   * Implementation should use Jdbi Handle to execute dynamic SQL.
+   */
+  default Set<ColumnLineageNodeData> executeCustomLineageQuery(String customQuery) {
+    return getHandle().createQuery(customQuery)
+        .mapTo(ColumnLineageNodeData.class)
+        .set();
+  }
+
+  /**
+   * Execute a single optimized recursive query for column lineage using unified_column_lineage view.
+   * This leverages postgres-fdw by using a view that combines local and federated lineage data.
+   *
+   * @param datasetFieldUuids Starting field UUIDs
+   * @param depth Maximum traversal depth
+   * @param withDownstream Whether to include downstream lineage
+   * @param createdAtUntil Point in time for lineage
+   * @return Set of all discovered lineage nodes
+   */
+  @SqlQuery("""
+      WITH RECURSIVE lineage_traversal AS (
+        -- Base case: starting fields from unified view (includes federated data)
+        SELECT 
+          output_dataset_field_uuid,
+          input_dataset_field_uuid,
+          transformation_description,
+          transformation_type,
+          0 as depth,
+          ARRAY[output_dataset_field_uuid] as visited_path,
+          lineage_source
+        FROM unified_column_lineage 
+        WHERE output_dataset_field_uuid IN (<datasetFieldUuids>)
+          AND created_at <= :createdAtUntil
+        
+        UNION ALL
+        
+        -- Recursive case: traverse lineage across all sources
+        SELECT 
+          ucl.output_dataset_field_uuid,
+          ucl.input_dataset_field_uuid,
+          ucl.transformation_description,
+          ucl.transformation_type,
+          lt.depth + 1,
+          lt.visited_path || ucl.output_dataset_field_uuid,
+          ucl.lineage_source
+        FROM unified_column_lineage ucl
+        JOIN lineage_traversal lt ON (
+          (:withDownstream AND ucl.input_dataset_field_uuid = lt.output_dataset_field_uuid) OR
+          (ucl.output_dataset_field_uuid = lt.input_dataset_field_uuid)
+        )
+        WHERE lt.depth < :depth - 1
+          AND NOT ucl.output_dataset_field_uuid = ANY(lt.visited_path)
+          AND ucl.created_at <= :createdAtUntil
+      ),
+      dataset_fields_view AS (
+        SELECT 
+          d.namespace_name as namespace_name, 
+          d.name as dataset_name, 
+          df.name as field_name, 
+          df.type, 
+          df.uuid, 
+          d.namespace_uuid
+        FROM dataset_fields df
+        INNER JOIN datasets_view d ON d.uuid = df.dataset_uuid
+      )
+      SELECT DISTINCT
+        output_fields.namespace_name,
+        output_fields.dataset_name,
+        output_fields.field_name,
+        output_fields.type,
+        ARRAY_AGG(DISTINCT ARRAY[
+          input_fields.namespace_name,
+          input_fields.dataset_name,
+          CAST(lt.input_dataset_field_uuid AS VARCHAR),
+          input_fields.field_name,
+          lt.transformation_description,
+          lt.transformation_type
+        ]) FILTER (WHERE input_fields.uuid IS NOT NULL) AS inputFields,
+        ARRAY[]::text[][] AS outputFields,
+        NULL::uuid as dataset_version_uuid
+      FROM lineage_traversal lt
+      JOIN dataset_fields_view output_fields ON lt.output_dataset_field_uuid = output_fields.uuid
+      LEFT JOIN dataset_fields_view input_fields ON lt.input_dataset_field_uuid = input_fields.uuid
+      GROUP BY
+        output_fields.namespace_name,
+        output_fields.dataset_name,
+        output_fields.field_name,
+        output_fields.type
+      """)
+  Set<ColumnLineageNodeData> getOptimizedLineageWithFederation(
+      @BindList(onEmpty = NULL_STRING) List<UUID> datasetFieldUuids,
+      int depth,
+      boolean withDownstream,
+      Instant createdAtUntil);
 }
