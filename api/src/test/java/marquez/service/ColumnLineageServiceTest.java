@@ -84,7 +84,7 @@ public class ColumnLineageServiceTest {
     createLineage(openLineageDao, dataset_B, dataset_C);
 
     Lineage lineage =
-        lineageService.lineage(
+        lineageService.directColumnLineage(
             NodeId.of(DatasetFieldId.of("namespace", "dataset_b", "col_c")), 20, false);
 
     assertThat(lineage.getGraph()).hasSize(3);
@@ -141,11 +141,11 @@ public class ColumnLineageServiceTest {
     createLineage(openLineageDao, dataset_B, dataset_C);
 
     Lineage lineageByField =
-        lineageService.lineage(
+        lineageService.directColumnLineage(
             NodeId.of(DatasetFieldId.of("namespace", "dataset_b", "col_c")), 20, false);
 
     Lineage lineageByDataset =
-        lineageService.lineage(
+        lineageService.directColumnLineage(
             NodeId.of(new DatasetId(NamespaceName.of("namespace"), DatasetName.of("dataset_b"))),
             20,
             false);
@@ -167,13 +167,13 @@ public class ColumnLineageServiceTest {
     assertThrows(
         NodeIdNotFoundException.class,
         () ->
-            lineageService.lineage(
+            lineageService.directColumnLineage(
                 NodeId.of(DatasetFieldId.of("namespace", "dataset_b", "col_d")), 20, false));
 
     assertThrows(
         NodeIdNotFoundException.class,
         () ->
-            lineageService.lineage(
+            lineageService.directColumnLineage(
                 NodeId.of(
                     new DatasetId(NamespaceName.of("namespace"), DatasetName.of("dataset_d"))),
                 20,
@@ -181,7 +181,7 @@ public class ColumnLineageServiceTest {
 
     assertThat(
             lineageService
-                .lineage(NodeId.of(DatasetFieldId.of("namespace", "dataset_a", "col_a")), 20, false)
+                .directColumnLineage(NodeId.of(DatasetFieldId.of("namespace", "dataset_a", "col_a")), 20, false)
                 .getGraph())
         .hasSize(0);
   }
@@ -226,7 +226,7 @@ public class ColumnLineageServiceTest {
     createLineage(openLineageDao, dataset_B, dataset_C);
 
     Lineage lineage =
-        lineageService.lineage(
+        lineageService.directColumnLineage(
             NodeId.of(DatasetFieldId.of("namespace", "dataset_b", "col_c")), 20, true);
 
     // assert that get lineage of dataset_B should co also return dataset_A and dataset_C
@@ -281,10 +281,10 @@ public class ColumnLineageServiceTest {
 
     // getting lineage by job_1 should be the same as getting it by dataset_B
     assertThat(
-            lineageService.lineage(
+            lineageService.directColumnLineage(
                 NodeId.of(JobId.of(NamespaceName.of("namespace"), JobName.of("job1"))), 20, true))
         .isEqualTo(
-            lineageService.lineage(
+            lineageService.directColumnLineage(
                 NodeId.of(
                     new DatasetId(NamespaceName.of("namespace"), DatasetName.of("dataset_b"))),
                 20,
@@ -299,7 +299,7 @@ public class ColumnLineageServiceTest {
     createLineage(openLineageDao, dataset_A, dataset_B);
 
     Lineage lineage =
-        lineageService.lineage(
+        lineageService.directColumnLineage(
             NodeId.of(
                 new DatasetVersionId(
                     NamespaceName.of("namespace"),
@@ -327,7 +327,7 @@ public class ColumnLineageServiceTest {
     // assert lineage by field version and by job are the same
     assertThat(lineage)
         .isEqualTo(
-            lineageService.lineage(
+            lineageService.directColumnLineage(
                 NodeId.of(
                     new DatasetFieldVersionId(
                         new DatasetId(NamespaceName.of("namespace"), DatasetName.of("dataset_b")),
@@ -338,7 +338,7 @@ public class ColumnLineageServiceTest {
 
     assertThat(lineage)
         .isEqualTo(
-            lineageService.lineage(
+            lineageService.directColumnLineage(
                 NodeId.of(
                     JobVersionId.of(
                         NamespaceName.of("namespace"),
