@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -34,7 +35,6 @@ import marquez.db.JobDao;
 import marquez.db.LineageDao;
 import marquez.db.LineageTestUtils;
 import marquez.db.LineageTestUtils.DatasetConsumerJob;
-import marquez.db.LineageTestUtils.JobLineage;
 import marquez.db.OpenLineageDao;
 import marquez.db.RunDao;
 import marquez.db.models.UpdateLineageRow;
@@ -109,16 +109,15 @@ public class LineageServiceTest {
             jobFacet,
             Arrays.asList(),
             Arrays.asList(dataset));
-    List<JobLineage> jobRows =
-        writeDownstreamLineage(
-            openLineageDao,
-            new LinkedList<>(
-                Arrays.asList(
-                    new DatasetConsumerJob("readJob", 20, Optional.of("outputData")),
-                    new DatasetConsumerJob("downstreamJob", 1, Optional.of("outputData2")),
-                    new DatasetConsumerJob("finalConsumer", 1, Optional.empty()))),
-            jobFacet,
-            dataset);
+    writeDownstreamLineage(
+        openLineageDao,
+        new LinkedList<>(
+            Arrays.asList(
+                new DatasetConsumerJob("readJob", 20, Optional.of("outputData")),
+                new DatasetConsumerJob("downstreamJob", 1, Optional.of("outputData2")),
+                new DatasetConsumerJob("finalConsumer", 1, Optional.empty()))),
+        jobFacet,
+        dataset);
 
     UpdateLineageRow secondRun =
         LineageTestUtils.createLineageRow(
@@ -164,7 +163,7 @@ public class LineageServiceTest {
             .hasSize(1)
             .first()
             .extracting(
-                n -> ((JobData) n.getData()).getLatestRun(),
+                n -> ((JobData) Objects.requireNonNull(n.getData())).getLatestRun(),
                 InstanceOfAssertFactories.optional(Run.class))
             .isPresent()
             .get();
@@ -237,16 +236,15 @@ public class LineageServiceTest {
             jobFacet,
             Arrays.asList(),
             Arrays.asList(dataset));
-    List<JobLineage> jobRows =
-        writeDownstreamLineage(
-            openLineageDao,
-            new LinkedList<>(
-                Arrays.asList(
-                    new DatasetConsumerJob("readJob", 20, Optional.of("outputData")),
-                    new DatasetConsumerJob("downstreamJob", 1, Optional.of("outputData2")),
-                    new DatasetConsumerJob("finalConsumer", 1, Optional.empty()))),
-            jobFacet,
-            dataset);
+    writeDownstreamLineage(
+        openLineageDao,
+        new LinkedList<>(
+            Arrays.asList(
+                new DatasetConsumerJob("readJob", 20, Optional.of("outputData")),
+                new DatasetConsumerJob("downstreamJob", 1, Optional.of("outputData2")),
+                new DatasetConsumerJob("finalConsumer", 1, Optional.empty()))),
+        jobFacet,
+        dataset);
     UpdateLineageRow secondRun =
         LineageTestUtils.createLineageRow(
             openLineageDao,
@@ -294,7 +292,7 @@ public class LineageServiceTest {
             .hasSize(1)
             .first()
             .extracting(
-                n -> ((JobData) n.getData()).getLatestRun(),
+                n -> ((JobData) Objects.requireNonNull(n.getData())).getLatestRun(),
                 InstanceOfAssertFactories.optional(Run.class))
             .isPresent()
             .get();
@@ -577,14 +575,13 @@ public class LineageServiceTest {
 
   @Test
   public void testLineageForOrphanedDataset() {
-    UpdateLineageRow writeJob =
-        LineageTestUtils.createLineageRow(
-            openLineageDao,
-            "writeJob",
-            "COMPLETE",
-            jobFacet,
-            Arrays.asList(),
-            Arrays.asList(dataset));
+    LineageTestUtils.createLineageRow(
+        openLineageDao,
+        "writeJob",
+        "COMPLETE",
+        jobFacet,
+        Arrays.asList(),
+        Arrays.asList(dataset));
 
     NodeId datasetNodeId =
         NodeId.of(new NamespaceName(dataset.getNamespace()), new DatasetName(dataset.getName()));
@@ -596,9 +593,8 @@ public class LineageServiceTest {
             NodeId.of(new JobId(new NamespaceName(NAMESPACE), new JobName("writeJob"))),
             datasetNodeId);
 
-    UpdateLineageRow updatedWriteJob =
-        LineageTestUtils.createLineageRow(
-            openLineageDao, "writeJob", "COMPLETE", jobFacet, Arrays.asList(), Arrays.asList());
+    LineageTestUtils.createLineageRow(
+        openLineageDao, "writeJob", "COMPLETE", jobFacet, Arrays.asList(), Arrays.asList());
 
     lineage = lineageService.lineage(datasetNodeId, 2);
     assertThat(lineage.getGraph())
@@ -640,24 +636,22 @@ public class LineageServiceTest {
             newDatasetFacet(new SchemaField("firstname", "string", "the first name")));
 
     // (3) Create a job with the main dataset
-    UpdateLineageRow firstJob =
-        LineageTestUtils.createLineageRow(
-            openLineageDao,
-            "firstJob",
-            "COMPLETE",
-            jobFacet,
-            Arrays.asList(mainDataset),
-            Arrays.asList());
+    LineageTestUtils.createLineageRow(
+        openLineageDao,
+        "firstJob",
+        "COMPLETE",
+        jobFacet,
+        Arrays.asList(mainDataset),
+        Arrays.asList());
 
     // (4) Create a job with the symlink dataset
-    UpdateLineageRow secondJob =
-        LineageTestUtils.createLineageRow(
-            openLineageDao,
-            "secondJob",
-            "COMPLETE",
-            jobFacet,
-            Arrays.asList(symlinkDataset),
-            Arrays.asList());
+    LineageTestUtils.createLineageRow(
+        openLineageDao,
+        "secondJob",
+        "COMPLETE",
+        jobFacet,
+        Arrays.asList(symlinkDataset),
+        Arrays.asList());
 
     // (5) We expect the first and second job linked together because the main
     // and symlink dataset are in fact the same dataset
