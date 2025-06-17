@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -49,23 +50,40 @@ public class ColumnLineageService extends DelegatingDaos.DelegatingColumnLineage
     this.datasetFieldDao = datasetFieldDao;
   }
 
-  public Lineage lineage(NodeId nodeId, int depth, boolean withDownstream) {
+  public Lineage directColumnLineage(NodeId nodeId, int depth, boolean withDownstream) {
     // 1. Get initial column nodes
     ColumnNodes columnNodes = getColumnNodes(nodeId);
     if (columnNodes.nodeIds.isEmpty()) {
         throw new NodeIdNotFoundException("Could not find node");
     }
 
-    // 2. Fetch upstream and downstream lineage separately (like LineageService.directLineage)
-    Set<ColumnLineageNodeData> upstreamLineage = fetchDirectColumnLineage(
-        new HashSet<>(columnNodes.nodeIds), depth, true, columnNodes.createdAtUntil);
-    
-    Set<ColumnLineageNodeData> allLineageData = new HashSet<>(upstreamLineage);
+    // 2. Fetch upstream and downstream lineage with concurrency when both are needed
+    Set<ColumnLineageNodeData> allLineageData;
     
     if (withDownstream) {
-        Set<ColumnLineageNodeData> downstreamLineage = fetchDirectColumnLineage(
-            new HashSet<>(columnNodes.nodeIds), depth, false, columnNodes.createdAtUntil);
-        allLineageData.addAll(downstreamLineage);
+        // Run upstream and downstream lineage fetching concurrently
+        CompletableFuture<Set<ColumnLineageNodeData>> upstreamFuture = CompletableFuture.supplyAsync(() ->
+            fetchDirectColumnLineage(new HashSet<>(columnNodes.nodeIds), depth, true, columnNodes.createdAtUntil));
+        
+        CompletableFuture<Set<ColumnLineageNodeData>> downstreamFuture = CompletableFuture.supplyAsync(() ->
+            fetchDirectColumnLineage(new HashSet<>(columnNodes.nodeIds), depth, false, columnNodes.createdAtUntil));
+        
+        try {
+            // Wait for both to complete and combine results
+            Set<ColumnLineageNodeData> upstreamLineage = upstreamFuture.get();
+            Set<ColumnLineageNodeData> downstreamLineage = downstreamFuture.get();
+            
+            allLineageData = new HashSet<>(upstreamLineage);
+            allLineageData.addAll(downstreamLineage);
+        } catch (Exception e) {
+            log.error("Error during concurrent lineage fetching", e);
+            throw new RuntimeException("Failed to fetch lineage data concurrently", e);
+        }
+    } else {
+        // Only fetch upstream lineage
+        Set<ColumnLineageNodeData> upstreamLineage = fetchDirectColumnLineage(
+            new HashSet<>(columnNodes.nodeIds), depth, true, columnNodes.createdAtUntil);
+        allLineageData = new HashSet<>(upstreamLineage);
     }
 
     log.debug("Completed lineage traversal with {} total nodes", allLineageData.size());

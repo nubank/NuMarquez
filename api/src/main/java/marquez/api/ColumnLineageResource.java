@@ -47,6 +47,6 @@ public class ColumnLineageResource extends BaseResource {
       return Response.status(400, "Node version cannot be specified when withDownstream is true")
           .build();
     }
-    return Response.ok(columnLineageService.lineage(nodeId, depth, withDownstream)).build();
+    return Response.ok(columnLineageService.directColumnLineage(nodeId, depth, withDownstream)).build();
   }
 }

@@ -40,7 +40,7 @@ public class ColumnLineageResourceTest {
             ColumnLineageResourceTest.class.getResourceAsStream("/column_lineage/node.json"),
             new TypeReference<>() {});
     LINEAGE = new Lineage(ImmutableSortedSet.of(testNode));
-    when(lineageService.lineage(any(NodeId.class), eq(20), eq(false))).thenReturn(LINEAGE);
+    when(lineageService.directColumnLineage(any(NodeId.class), eq(20), eq(false))).thenReturn(LINEAGE);
 
     ServiceFactory serviceFactory =
         ApiTestUtils.mockServiceFactory(Map.of(ColumnLineageService.class, lineageService));
