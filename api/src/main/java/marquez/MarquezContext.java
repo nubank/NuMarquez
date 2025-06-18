@@ -16,6 +16,7 @@ import lombok.NonNull;
 import marquez.api.ColumnLineageResource;
 import marquez.api.DatasetResource;
 import marquez.api.JobResource;
+import marquez.api.LineageKindsResource;
 import marquez.api.NamespaceResource;
 import marquez.api.OpenLineageResource;
 import marquez.api.SearchResource;
@@ -104,6 +105,7 @@ public final class MarquezContext {
   @Getter private final JobResource jobResource;
   @Getter private final TagResource tagResource;
   @Getter private final OpenLineageResource openLineageResource;
+  @Getter private final LineageKindsResource lineageKindsResource;
   @Getter private final marquez.api.v2beta.SearchResource v2BetasearchResource;
   @Getter private final SearchResource searchResource;
   @Getter private final StatsResource opsResource;
@@ -182,6 +184,7 @@ public final class MarquezContext {
     this.jobResource = new JobResource(serviceFactory, jobVersionDao, jobFacetsDao, runFacetsDao);
     this.tagResource = new TagResource(serviceFactory);
     this.openLineageResource = new OpenLineageResource(serviceFactory, openLineageDao);
+    this.lineageKindsResource = new LineageKindsResource(serviceFactory);
     this.searchResource = new SearchResource(searchDao);
     this.opsResource = new StatsResource(serviceFactory);
     this.v2BetasearchResource = new marquez.api.v2beta.SearchResource(serviceFactory);
@@ -197,6 +200,7 @@ public final class MarquezContext {
             jdbiException,
             jsonException,
             openLineageResource,
+            lineageKindsResource,
             searchResource,
             v2BetasearchResource,
             opsResource);

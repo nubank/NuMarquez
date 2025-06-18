@@ -1,0 +1,735 @@
+# OpenAPI Extension for Data Lineage Kinds API
+# Based on ADR-27 (API Consistency Standards) and ADR-13 (Extensible Data Model)
+
+openapi: 3.0.2
+info:
+  title: Marquez Data Lineage Kinds API
+  version: v1alpha1
+  description: |
+    Extension to the Marquez API providing Kubernetes-style kinds for data lineage representation.
+    This API follows the Archipelago architecture principles and enables testing of lineage kinds production.
+    
+    **Key Features:**
+    - Kubernetes-style API versioning (`graphs/v1alpha1`)
+    - Multiple granularity levels (data object, attribute, schema)
+    - Extensible metadata with labels and annotations
+    - Compatible with existing OpenLineage events
+    
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: http://localhost:5000/api/graphs/v1alpha1
+    description: Local Kinds API server
+
+paths:
+  # Legacy endpoint documentation (missing from current spec)
+  /lineage/direct:
+    get:
+      operationId: getDirectLineage
+      summary: Get direct lineage graph (legacy format)
+      description: |
+        Returns direct lineage for a given node using the traditional Marquez format.
+        This endpoint serves as the basis for kinds transformation testing.
+      tags:
+        - Legacy Lineage
+      parameters:
+        - name: nodeId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The node ID to get lineage for
+          example: "dataset:my-namespace:my-dataset"
+        - name: depth
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Maximum depth of lineage traversal
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TraditionalLineageGraph'
+
+  # Kinds-based endpoints
+  /lineage-graphs/{name}:
+    get:
+      operationId: getLineageGraphKind
+      summary: Get LineageGraph kind
+      description: |
+        Returns a LineageGraph kind representing data object-level lineage.
+        Follows Kubernetes API conventions with apiVersion, kind, metadata, and spec.
+      tags:
+        - Data Object Lineage
+      parameters:
+        - $ref: '#/components/parameters/kindName'
+        - $ref: '#/components/parameters/depth'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LineageGraphKind'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /lineage-graphs:
+    get:
+      operationId: listLineageGraphKinds
+      summary: List LineageGraph kinds
+      description: Returns a list of LineageGraph kinds with optional filtering
+      tags:
+        - Data Object Lineage
+      parameters:
+        - $ref: '#/components/parameters/labelSelector'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/continue'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LineageGraphKindList'
+    post:
+      operationId: createLineageGraphKind
+      summary: Create LineageGraph kind
+      description: Create a new LineageGraph kind for testing purposes
+      tags:
+        - Data Object Lineage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LineageGraphKind'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LineageGraphKind'
+
+  /data-object-nodes/{name}:
+    get:
+      operationId: getDataObjectNodeKind
+      summary: Get DataObjectNode kind
+      description: Returns a single data object node kind
+      tags:
+        - Data Object Nodes
+      parameters:
+        - $ref: '#/components/parameters/kindName'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataObjectNodeKind'
+
+  /data-object-nodes:
+    get:
+      operationId: listDataObjectNodeKinds
+      summary: List DataObjectNode kinds
+      tags:
+        - Data Object Nodes
+      parameters:
+        - $ref: '#/components/parameters/labelSelector'
+        - $ref: '#/components/parameters/limit'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataObjectNodeKindList'
+
+  /attribute-lineage-graphs/{name}:
+    get:
+      operationId: getAttributeLineageGraphKind
+      summary: Get AttributeLineageGraph kind
+      description: Returns attribute-level lineage graph
+      tags:
+        - Attribute Lineage
+      parameters:
+        - $ref: '#/components/parameters/kindName'
+        - $ref: '#/components/parameters/depth'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttributeLineageGraphKind'
+
+  /schema-lineage-graphs/{name}:
+    get:
+      operationId: getSchemaLineageGraphKind
+      summary: Get SchemaLineageGraph kind
+      description: Returns complete schema-level lineage
+      tags:
+        - Schema Lineage
+      parameters:
+        - $ref: '#/components/parameters/kindName'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaLineageGraphKind'
+
+  # Testing and conversion endpoints
+  /convert/traditional-to-kinds:
+    post:
+      operationId: convertTraditionalToKinds
+      summary: Convert traditional lineage to kinds format
+      description: |
+        Testing endpoint that converts traditional Marquez lineage format to kinds format.
+        Useful for validating the transformation logic.
+      tags:
+        - Testing & Conversion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversionResponse'
+
+components:
+  parameters:
+    kindName:
+      name: name
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Name of the kind resource
+      example: "my-dataset-lineage"
+
+    depth:
+      name: depth
+      in: query
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
+      description: Maximum depth of lineage traversal
+
+    labelSelector:
+      name: labelSelector
+      in: query
+      schema:
+        type: string
+      description: Label selector for filtering (e.g., "environment=production,team=data")
+      example: "data-domain=customer,geo=BR"
+
+    limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 50
+        minimum: 1
+        maximum: 500
+      description: Maximum number of items to return
+
+    continue:
+      name: continue
+      in: query
+      schema:
+        type: string
+      description: Continue token for pagination
+
+  responses:
+    NotFound:
+      description: The specified resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    # Traditional lineage format (for comparison)
+    TraditionalLineageGraph:
+      type: object
+      properties:
+        graph:
+          type: array
+          items:
+            $ref: '#/components/schemas/TraditionalGraphNode'
+
+    TraditionalGraphNode:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [JOB, DATASET]
+        data:
+          type: object
+        inEdges:
+          type: array
+          items:
+            type: object
+        outEdges:
+          type: array
+          items:
+            type: object
+
+    # Kinds-based schemas
+    LineageGraphKind:
+      type: object
+      required:
+        - apiVersion
+        - kind
+        - metadata
+        - spec
+      properties:
+        apiVersion:
+          type: string
+          enum: ["graphs/v1alpha1"]
+          description: API version following Kubernetes conventions
+        kind:
+          type: string
+          enum: ["LineageGraph"]
+          description: The kind of resource
+        metadata:
+          $ref: '#/components/schemas/KindMetadata'
+        spec:
+          $ref: '#/components/schemas/LineageGraphSpec'
+      example:
+        apiVersion: "graphs/v1alpha1"
+        kind: "LineageGraph"
+        metadata:
+          name: "customer-data-lineage"
+          graphDepth: 2
+          centralNode:
+            dataGovernance:
+              geo: "BR"
+              dataDomain: "customer"
+              dataSubdomain: "profile"
+            nurn: "nurn:nu:data:metapod:dataset:customer/profile"
+            name: "customer/profile"
+            type: "dataset"
+          labels:
+            environment: "production"
+            team: "customer-data"
+          annotations:
+            cost-center: "engineering"
+            sla-tier: "gold"
+        spec:
+          nodes:
+            - nurn: "nurn:nu:data:metapod:dataset:customer/profile"
+              name: "customer/profile"
+              type: "dataset"
+              distanceFromTheCenter: 0
+              inEdges: []
+              outEdges: ["customer/analytics"]
+
+    LineageGraphSpec:
+      type: object
+      required:
+        - nodes
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataObjectNodeSpec'
+          description: List of data object nodes in the lineage graph
+
+    KindMetadata:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Name of the resource
+        graphDepth:
+          type: integer
+          description: Depth of the lineage graph
+        centralNode:
+          $ref: '#/components/schemas/CentralNodeInfo'
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+          description: Key-value pairs for categorization (from ADR-13)
+        annotations:
+          type: object
+          additionalProperties:
+            type: string
+          description: Key-value pairs for additional metadata (from ADR-13)
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CentralNodeInfo:
+      type: object
+      required:
+        - nurn
+        - name
+        - type
+        - dataGovernance
+      properties:
+        dataGovernance:
+          $ref: '#/components/schemas/DataGovernance'
+        nurn:
+          type: string
+          description: Nubank Uniform Resource Name
+        name:
+          type: string
+          description: Name of the data object
+        type:
+          type: string
+          enum: ["dataset", "stream", "notebook", "dashboard", "feature", "model"]
+
+    DataGovernance:
+      type: object
+      required:
+        - dataDomain
+        - dataSubdomain
+      properties:
+        geo:
+          type: string
+          description: Geographic code identifier
+          example: "BR"
+        dataDomain:
+          type: string
+          description: Data domain name
+          example: "customer"
+        dataSubdomain:
+          type: string
+          description: Data subdomain name
+          example: "profile"
+
+    DataObjectNodeKind:
+      type: object
+      required:
+        - apiVersion
+        - kind
+        - metadata
+        - spec
+      properties:
+        apiVersion:
+          type: string
+          enum: ["graphs/v1alpha1"]
+        kind:
+          type: string
+          enum: ["DataObjectNode"]
+        metadata:
+          $ref: '#/components/schemas/SimpleKindMetadata'
+        spec:
+          $ref: '#/components/schemas/DataObjectNodeSpec'
+
+    DataObjectNodeSpec:
+      type: object
+      required:
+        - nurn
+        - name
+        - type
+        - dataGovernance
+        - distanceFromTheCenter
+      properties:
+        inEdges:
+          type: array
+          items:
+            type: string
+          description: List of input node references
+        outEdges:
+          type: array
+          items:
+            type: string
+          description: List of output node references
+        distanceFromTheCenter:
+          type: integer
+          description: Distance from the central node
+        nurn:
+          type: string
+          description: Nubank Uniform Resource Name
+        name:
+          type: string
+          description: Name of the data object
+        type:
+          type: string
+          enum: ["dataset", "stream", "notebook", "dashboard", "feature", "model"]
+        sourceSystem:
+          type: string
+          description: Source system that produces the data object
+          example: "Itaipu"
+        dataGovernance:
+          $ref: '#/components/schemas/DataGovernance'
+        description:
+          type: string
+          description: Description of the data object
+        version:
+          type: string
+          description: Version identifier
+        schema:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttributeSchema'
+          description: Schema definition for the data object
+
+    AttributeSchema:
+      type: object
+      required:
+        - attributeName
+        - dataType
+      properties:
+        nurn:
+          type: string
+          description: Calculated NuRN for the attribute
+        attributeName:
+          type: string
+          description: Name of the attribute
+        dataType:
+          type: string
+          description: Data type of the attribute
+        description:
+          type: string
+          description: Description of the attribute
+
+    AttributeLineageGraphKind:
+      type: object
+      required:
+        - apiVersion
+        - kind
+        - metadata
+        - spec
+      properties:
+        apiVersion:
+          type: string
+          enum: ["graphs/v1alpha1"]
+        kind:
+          type: string
+          enum: ["AttributeLineageGraph"]
+        metadata:
+          $ref: '#/components/schemas/KindMetadata'
+        spec:
+          $ref: '#/components/schemas/AttributeLineageGraphSpec'
+
+    AttributeLineageGraphSpec:
+      type: object
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttributeNodeSpec'
+
+    AttributeNodeSpec:
+      type: object
+      required:
+        - nurn
+        - attributeName
+        - dataType
+      properties:
+        nurn:
+          type: string
+        attributeName:
+          type: string
+        dataType:
+          type: string
+        inEdges:
+          type: array
+          items:
+            type: string
+        outEdges:
+          type: array
+          items:
+            type: string
+        distanceFromTheCenter:
+          type: integer
+
+    SchemaLineageGraphKind:
+      type: object
+      required:
+        - apiVersion
+        - kind
+        - metadata
+        - spec
+      properties:
+        apiVersion:
+          type: string
+          enum: ["graphs/v1alpha1"]
+        kind:
+          type: string
+          enum: ["SchemaLineageGraph"]
+        metadata:
+          $ref: '#/components/schemas/SimpleKindMetadata'
+        spec:
+          $ref: '#/components/schemas/SchemaLineageGraphSpec'
+
+    SchemaLineageGraphSpec:
+      type: object
+      properties:
+        attributeLineageGraphs:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttributeLineageGraphKind'
+          description: Collection of attribute lineage graphs
+
+    SimpleKindMetadata:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        annotations:
+          type: object
+          additionalProperties:
+            type: string
+
+    # List types
+    LineageGraphKindList:
+      type: object
+      required:
+        - apiVersion
+        - kind
+        - items
+      properties:
+        apiVersion:
+          type: string
+          enum: ["graphs/v1alpha1"]
+        kind:
+          type: string
+          enum: ["LineageGraphList"]
+        metadata:
+          $ref: '#/components/schemas/ListMetadata'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineageGraphKind'
+
+    DataObjectNodeKindList:
+      type: object
+      required:
+        - apiVersion
+        - kind
+        - items
+      properties:
+        apiVersion:
+          type: string
+          enum: ["graphs/v1alpha1"]
+        kind:
+          type: string
+          enum: ["DataObjectNodeList"]
+        metadata:
+          $ref: '#/components/schemas/ListMetadata'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataObjectNodeKind'
+
+    ListMetadata:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+        continue:
+          type: string
+          description: Token for pagination
+
+    # Testing and conversion schemas
+    ConversionRequest:
+      type: object
+      required:
+        - nodeId
+        - depth
+      properties:
+        nodeId:
+          type: string
+          description: Node ID for lineage retrieval
+        depth:
+          type: integer
+          description: Lineage depth
+        targetKind:
+          type: string
+          enum: ["LineageGraph", "DataObjectNode", "AttributeLineageGraph"]
+          default: "LineageGraph"
+        includeMetadata:
+          type: boolean
+          default: true
+          description: Whether to include governance metadata
+
+    ConversionResponse:
+      type: object
+      properties:
+        traditional:
+          $ref: '#/components/schemas/TraditionalLineageGraph'
+        kinds:
+          oneOf:
+            - $ref: '#/components/schemas/LineageGraphKind'
+            - $ref: '#/components/schemas/DataObjectNodeKind'
+            - $ref: '#/components/schemas/AttributeLineageGraphKind'
+        conversionMetadata:
+          $ref: '#/components/schemas/ConversionMetadata'
+
+    ConversionMetadata:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        sourceEndpoint:
+          type: string
+        conversionDuration:
+          type: string
+        nodesProcessed:
+          type: integer
+        warnings:
+          type: array
+          items:
+            type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+tags:
+  - name: Data Object Lineage
+    description: Operations for LineageGraph kinds (data object level)
+  - name: Data Object Nodes
+    description: Operations for individual DataObjectNode kinds
+  - name: Attribute Lineage
+    description: Operations for attribute-level lineage
+  - name: Schema Lineage
+    description: Operations for complete schema lineage
+  - name: Testing & Conversion
+    description: Testing endpoints for format conversion
+  - name: Legacy Lineage
+    description: Traditional Marquez lineage endpoints 
