@@ -89,6 +89,43 @@ public class LineageKindsResource extends BaseResource {
   }
 
   /**
+   * Alternative endpoint using query parameter instead of path parameter
+   * Example: GET /api/graphs/v1alpha1/kinds?nodeId=dataset:ai-private-banking.common:dataset.nusignals-stability-index-daily-categorization-time&depth=2
+   */
+  @Timed
+  @ResponseMetered
+  @ExceptionMetered
+  @GET
+  @Produces(APPLICATION_JSON)
+  @Path("/kinds")
+  public Response getLineageKindsByQuery(
+      @QueryParam("nodeId") @NotNull String nodeId,
+      @QueryParam("depth") @DefaultValue("1") int depth,
+      @QueryParam("includeMetadata") @DefaultValue("true") boolean includeMetadata) {
+    
+    try {
+      log.info("Getting lineage kinds for nodeId: {}", nodeId);
+      
+      // No need to URL decode since it's a query parameter
+      LineageGraphKind lineageGraphKind = lineageKindsService.convertToLineageGraphKind(
+          nodeId, depth, includeMetadata);
+      
+      return Response.ok(lineageGraphKind).build();
+      
+    } catch (NodeIdNotFoundException e) {
+      log.warn("NodeId not found: {}", nodeId);
+      return Response.status(404)
+          .entity(Map.of("error", "Node not found", "nodeId", nodeId))
+          .build();
+    } catch (Exception e) {
+      log.error("Failed to get lineage kinds for nodeId: {}", nodeId, e);
+      return Response.status(500)
+          .entity(Map.of("error", "Conversion failed", "message", e.getMessage()))
+          .build();
+    }
+  }
+
+  /**
    * Get a LineageGraph kind by name
    */
   @Timed
