@@ -106,6 +106,14 @@ public final class MarquezApp extends Application<MarquezConfig> {
             "/graphql-playground",
             "graphql-playground/index.htm",
             "graphql-playground"));
+    
+    // Add API testing interface
+    bootstrap.addBundle(
+        new AssetsBundle(
+            "/assets",
+            "/api-test",
+            "api-testing-ui/index.html",
+            "api-test"));
   }
 
   @Override
@@ -152,7 +160,7 @@ public final class MarquezApp extends Application<MarquezConfig> {
 
     // Add scheduled jobs to lifecycle.
     if (config.hasDbRetentionPolicy()) {
-      // Add job to apply retention policy to database.
+    // Add job to apply retention policy to database.
       env.lifecycle().manage(new DbRetentionJob(jdbi, config.getDbRetention()));
     }
 

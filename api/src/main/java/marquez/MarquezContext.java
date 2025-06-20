@@ -53,6 +53,7 @@ import marquez.service.DatasetService;
 import marquez.service.DatasetVersionService;
 import marquez.service.JobService;
 import marquez.service.LineageService;
+import marquez.service.LineageKindsService;
 import marquez.service.NamespaceService;
 import marquez.service.OpenLineageService;
 import marquez.service.RunService;
@@ -95,6 +96,7 @@ public final class MarquezContext {
   @Getter private final RunService runService;
   @Getter private final OpenLineageService openLineageService;
   @Getter private final LineageService lineageService;
+  @Getter private final LineageKindsService lineageKindsService;
   @Getter private final ColumnLineageService columnLineageService;
   @Getter private final SearchService searchService;
   @Getter private final StatsService statsService;
@@ -156,6 +158,7 @@ public final class MarquezContext {
     this.tagService.init(tags);
     this.openLineageService = new OpenLineageService(baseDao, runService);
     this.lineageService = new LineageService(lineageDao, jobDao, runDao);
+    this.lineageKindsService = new LineageKindsService(lineageService);
     this.columnLineageService = new ColumnLineageService(columnLineageDao, datasetFieldDao);
     this.searchService = new SearchService(searchConfig);
     this.statsService = new StatsService(statsDao);
@@ -172,6 +175,7 @@ public final class MarquezContext {
             .searchService(searchService)
             .sourceService(sourceService)
             .lineageService(lineageService)
+            .lineageKindsService(lineageKindsService)
             .columnLineageService(columnLineageService)
             .datasetFieldService(new DatasetFieldService(baseDao))
             .datasetVersionService(new DatasetVersionService(baseDao))
