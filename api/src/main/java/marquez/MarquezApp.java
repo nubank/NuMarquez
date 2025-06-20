@@ -34,9 +34,9 @@ import marquez.cli.MetadataCommand;
 import marquez.cli.SeedCommand;
 import marquez.common.Utils;
 import marquez.db.DbMigration;
+import marquez.jobs.ColumnLineageLatestRefresherJob;
 import marquez.jobs.DbRetentionJob;
 import marquez.jobs.MaterializeViewRefresherJob;
-import marquez.jobs.ColumnLineageLatestRefresherJob;
 import marquez.logging.DelegatingSqlLogger;
 import marquez.logging.LabelledSqlLogger;
 import marquez.logging.LoggingMdcFilter;
@@ -106,14 +106,6 @@ public final class MarquezApp extends Application<MarquezConfig> {
             "/graphql-playground",
             "graphql-playground/index.htm",
             "graphql-playground"));
-    
-    // Add API testing interface
-    bootstrap.addBundle(
-        new AssetsBundle(
-            "/assets",
-            "/api-test",
-            "api-testing-ui/index.html",
-            "api-test"));
   }
 
   @Override
@@ -124,7 +116,8 @@ public final class MarquezApp extends Application<MarquezConfig> {
     log.info("Running startup actions...");
 
     try {
-      DbMigration.migrateDbOrError(config.getFlywayFactory(), source, config.isMigrateOnStartup());
+      DbMigration.migrateDbOrError(config.getFlywayFactory(), source,
+    config.isMigrateOnStartup());
     } catch (FlywayException errorOnDbMigrate) {
       log.info("Stopping app...");
       // Propagate throwable up the stack.
