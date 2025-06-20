@@ -13,8 +13,8 @@ import javax.validation.constraints.NotNull;
 import lombok.Value;
 
 /**
- * Container class for all LineageKinds-related model classes.
- * These models represent the "kinds" format for lineage data.
+ * Container class for all LineageKinds-related model classes. These models represent the "kinds"
+ * format for lineage data.
  */
 public class LineageKindsModels {
 
@@ -25,15 +25,15 @@ public class LineageKindsModels {
     @JsonProperty("nodeId")
     @NotNull
     String nodeId;
-    
+
     @JsonProperty("depth")
     @lombok.Builder.Default
     int depth = 20;
-    
+
     @JsonProperty("targetKind")
     @lombok.Builder.Default
     String targetKind = "LineageGraph";
-    
+
     @JsonProperty("includeMetadata")
     @lombok.Builder.Default
     boolean includeMetadata = true;
@@ -44,10 +44,10 @@ public class LineageKindsModels {
   public static class ConversionResponse {
     @JsonProperty("traditional")
     Lineage traditional;
-    
+
     @JsonProperty("kinds")
     LineageGraphKind kinds;
-    
+
     @JsonProperty("conversionMetadata")
     ConversionMetadata conversionMetadata;
   }
@@ -57,10 +57,10 @@ public class LineageKindsModels {
   public static class ConversionMetadata {
     @JsonProperty("timestamp")
     Instant timestamp;
-    
+
     @JsonProperty("sourceEndpoint")
     String sourceEndpoint;
-    
+
     @JsonProperty("nodesProcessed")
     Integer nodesProcessed;
   }
@@ -70,13 +70,13 @@ public class LineageKindsModels {
   public static class LineageGraphKind {
     @JsonProperty("apiVersion")
     String apiVersion;
-    
+
     @JsonProperty("kind")
     String kind;
-    
+
     @JsonProperty("metadata")
     KindMetadata metadata;
-    
+
     @JsonProperty("spec")
     LineageGraphSpec spec;
   }
@@ -86,19 +86,19 @@ public class LineageKindsModels {
   public static class KindMetadata {
     @JsonProperty("name")
     String name;
-    
+
     @JsonProperty("graphDepth")
     Integer graphDepth;
-    
-    @JsonProperty("centralNode") 
+
+    @JsonProperty("centralNode")
     CentralNodeInfo centralNode;
-    
+
     @JsonProperty("labels")
     Map<String, String> labels;
-    
+
     @JsonProperty("annotations")
     Map<String, String> annotations;
-    
+
     @JsonProperty("createdAt")
     Instant createdAt;
   }
@@ -115,31 +115,31 @@ public class LineageKindsModels {
   public static class DataObjectNodeSpec {
     @JsonProperty("nurn")
     String nurn;
-    
+
     @JsonProperty("name")
     String name;
-    
+
     @JsonProperty("type")
     String type;
-    
+
     @JsonProperty("sourceSystem")
     String sourceSystem;
-    
+
     @JsonProperty("dataGovernance")
     DataGovernance dataGovernance;
-    
+
     @JsonProperty("distanceFromTheCenter")
     Integer distanceFromTheCenter;
-    
+
     @JsonProperty("inEdges")
     List<String> inEdges;
-    
+
     @JsonProperty("outEdges")
     List<String> outEdges;
-    
+
     @JsonProperty("description")
     String description;
-    
+
     @JsonProperty("version")
     String version;
   }
@@ -149,11 +149,11 @@ public class LineageKindsModels {
   public static class DataGovernance {
     @JsonProperty("geo")
     String geo;
-    
+
     @JsonProperty("dataDomain")
     String dataDomain;
-    
-    @JsonProperty("dataSubdomain") 
+
+    @JsonProperty("dataSubdomain")
     String dataSubdomain;
   }
 
@@ -162,16 +162,16 @@ public class LineageKindsModels {
   public static class CentralNodeInfo {
     @JsonProperty("dataGovernance")
     DataGovernance dataGovernance;
-    
+
     @JsonProperty("nurn")
     String nurn;
-    
+
     @JsonProperty("name")
     String name;
-    
+
     @JsonProperty("type")
     String type;
-    
+
     @JsonProperty("sourceSystem")
     String sourceSystem;
   }
@@ -181,13 +181,13 @@ public class LineageKindsModels {
   public static class LineageGraphKindList {
     @JsonProperty("apiVersion")
     String apiVersion;
-    
+
     @JsonProperty("kind")
     String kind;
-    
+
     @JsonProperty("metadata")
     ListMetadata metadata;
-    
+
     @JsonProperty("items")
     List<LineageGraphKind> items;
   }
@@ -198,4 +198,4 @@ public class LineageKindsModels {
     @JsonProperty("totalCount")
     Integer totalCount;
   }
-} 
+}
