@@ -16,6 +16,7 @@ import lombok.NonNull;
 import marquez.api.ColumnLineageResource;
 import marquez.api.DatasetResource;
 import marquez.api.JobResource;
+import marquez.api.LineageKindsResource;
 import marquez.api.NamespaceResource;
 import marquez.api.OpenLineageResource;
 import marquez.api.SearchResource;
@@ -51,6 +52,7 @@ import marquez.service.DatasetFieldService;
 import marquez.service.DatasetService;
 import marquez.service.DatasetVersionService;
 import marquez.service.JobService;
+import marquez.service.LineageKindsService;
 import marquez.service.LineageService;
 import marquez.service.NamespaceService;
 import marquez.service.OpenLineageService;
@@ -94,6 +96,7 @@ public final class MarquezContext {
   @Getter private final RunService runService;
   @Getter private final OpenLineageService openLineageService;
   @Getter private final LineageService lineageService;
+  @Getter private final LineageKindsService lineageKindsService;
   @Getter private final ColumnLineageService columnLineageService;
   @Getter private final SearchService searchService;
   @Getter private final StatsService statsService;
@@ -104,6 +107,7 @@ public final class MarquezContext {
   @Getter private final JobResource jobResource;
   @Getter private final TagResource tagResource;
   @Getter private final OpenLineageResource openLineageResource;
+  @Getter private final LineageKindsResource lineageKindsResource;
   @Getter private final marquez.api.v2beta.SearchResource v2BetasearchResource;
   @Getter private final SearchResource searchResource;
   @Getter private final StatsResource opsResource;
@@ -154,6 +158,7 @@ public final class MarquezContext {
     // this.tagService.init(tags);
     this.openLineageService = new OpenLineageService(baseDao, runService);
     this.lineageService = new LineageService(lineageDao, jobDao, runDao);
+    this.lineageKindsService = new LineageKindsService(lineageService);
     this.columnLineageService = new ColumnLineageService(columnLineageDao, datasetFieldDao);
     this.searchService = new SearchService(searchConfig);
     this.statsService = new StatsService(statsDao);
@@ -170,6 +175,7 @@ public final class MarquezContext {
             .searchService(searchService)
             .sourceService(sourceService)
             .lineageService(lineageService)
+            .lineageKindsService(lineageKindsService)
             .columnLineageService(columnLineageService)
             .datasetFieldService(new DatasetFieldService(baseDao))
             .datasetVersionService(new DatasetVersionService(baseDao))
@@ -184,6 +190,7 @@ public final class MarquezContext {
     this.openLineageResource = new OpenLineageResource(serviceFactory, openLineageDao);
     this.searchResource = new SearchResource(searchDao);
     this.opsResource = new StatsResource(serviceFactory);
+    this.lineageKindsResource = new LineageKindsResource(serviceFactory);
     this.v2BetasearchResource = new marquez.api.v2beta.SearchResource(serviceFactory);
 
     this.resources =
@@ -199,7 +206,8 @@ public final class MarquezContext {
             openLineageResource,
             searchResource,
             v2BetasearchResource,
-            opsResource);
+            opsResource,
+            lineageKindsResource);
 
     final MarquezGraphqlServletBuilder servlet = new MarquezGraphqlServletBuilder();
     this.graphqlServlet = servlet.getServlet(new GraphqlSchemaBuilder(jdbi));

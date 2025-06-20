@@ -34,9 +34,9 @@ import marquez.cli.MetadataCommand;
 import marquez.cli.SeedCommand;
 import marquez.common.Utils;
 import marquez.db.DbMigration;
+import marquez.jobs.ColumnLineageLatestRefresherJob;
 import marquez.jobs.DbRetentionJob;
 import marquez.jobs.MaterializeViewRefresherJob;
-import marquez.jobs.ColumnLineageLatestRefresherJob;
 import marquez.logging.DelegatingSqlLogger;
 import marquez.logging.LabelledSqlLogger;
 import marquez.logging.LoggingMdcFilter;
@@ -116,7 +116,8 @@ public final class MarquezApp extends Application<MarquezConfig> {
     log.info("Running startup actions...");
 
     try {
-      DbMigration.migrateDbOrError(config.getFlywayFactory(), source, config.isMigrateOnStartup());
+      DbMigration.migrateDbOrError(config.getFlywayFactory(), source,
+    config.isMigrateOnStartup());
     } catch (FlywayException errorOnDbMigrate) {
       log.info("Stopping app...");
       // Propagate throwable up the stack.
@@ -152,7 +153,7 @@ public final class MarquezApp extends Application<MarquezConfig> {
 
     // Add scheduled jobs to lifecycle.
     if (config.hasDbRetentionPolicy()) {
-      // Add job to apply retention policy to database.
+    // Add job to apply retention policy to database.
       env.lifecycle().manage(new DbRetentionJob(jdbi, config.getDbRetention()));
     }
 

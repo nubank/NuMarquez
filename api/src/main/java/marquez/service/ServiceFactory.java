@@ -22,6 +22,7 @@ public class ServiceFactory {
   @NonNull DatasetVersionService datasetVersionService;
   @NonNull DatasetFieldService datasetFieldService;
   @NonNull LineageService lineageService;
+  LineageKindsService lineageKindsService;
   @NonNull ColumnLineageService columnLineageService;
   @NonNull SearchService searchService;
   @NonNull StatsService statsService;
