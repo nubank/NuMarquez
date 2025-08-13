@@ -14,6 +14,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -81,6 +82,9 @@ import org.slf4j.LoggerFactory;
 public interface OpenLineageDao extends BaseDao {
   String DEFAULT_SOURCE_NAME = "default";
   String DEFAULT_NAMESPACE_OWNER = "anonymous";
+  Map<String, SourceRow> SOURCE_ROW_CACHE = new HashMap<>();
+
+
 
   enum SpecEventType {
     RUN_EVENT,
@@ -835,6 +839,40 @@ public interface OpenLineageDao extends BaseDao {
     return namespace.replaceAll("[^a-z:/A-Z0-9\\-_.@+]", "_");
   }
 
+  /**
+   * Returns the {@link SourceType} for the given {@link Dataset}.
+   * At Nubank we have no use for the SourceType for now.
+   * The source of all datasets will always be default.
+   * We might have memory issues with this approach if this changes in the future.
+   * @param sourceDao DAO for the source table
+   * @param ds dataset object
+   * @param now instant
+   * @return SourceRow
+   */
+  private SourceRow getOrUpsertSource(SourceDao sourceDao, Dataset ds, Instant now) {
+    String sourceName = DEFAULT_SOURCE_NAME;
+    String sourceUri = "";
+    if (ds.getFacets() != null && ds.getFacets().getDataSource() != null) {
+      sourceName = ds.getFacets().getDataSource().getName() == null ?
+            DEFAULT_SOURCE_NAME :
+            ds.getFacets().getDataSource().getName();
+      sourceUri = getUrlOrNull(ds.getFacets().getDataSource().getUri());
+    }
+
+    SourceRow source = SOURCE_ROW_CACHE.get(sourceName);
+    if (source == null) {
+        source = sourceDao
+                .upsert(
+                        UUID.randomUUID(),
+                        getSourceType(ds),
+                        now,
+                        sourceName,
+                        sourceUri);
+        SOURCE_ROW_CACHE.put(sourceName, source);
+    }
+    return source;
+  }
+
   default DatasetRecord upsertLineageDataset(
       ModelDaos daos, Dataset ds, Instant now, UUID runUuid, boolean isInput) {
     daos.initBaseDao(this);
@@ -842,21 +880,7 @@ public interface OpenLineageDao extends BaseDao {
         daos.getNamespaceDao()
             .upsertNamespaceRow(UUID.randomUUID(), now, ds.getNamespace(), DEFAULT_NAMESPACE_OWNER);
 
-    SourceRow source;
-    if (ds.getFacets() != null && ds.getFacets().getDataSource() != null) {
-      source =
-          daos.getSourceDao()
-              .upsert(
-                  UUID.randomUUID(),
-                  getSourceType(ds),
-                  now,
-                  ds.getFacets().getDataSource().getName(),
-                  getUrlOrNull(ds.getFacets().getDataSource().getUri()));
-    } else {
-      source =
-          daos.getSourceDao()
-              .upsertOrDefault(UUID.randomUUID(), getSourceType(ds), now, DEFAULT_SOURCE_NAME, "");
-    }
+    SourceRow source = getOrUpsertSource(daos.getSourceDao(), ds, now);
 
     String dsDescription = null;
     if (ds.getFacets() != null && ds.getFacets().getDocumentation() != null) {
