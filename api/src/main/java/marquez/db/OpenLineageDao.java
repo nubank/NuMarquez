@@ -850,13 +850,12 @@ public interface OpenLineageDao extends BaseDao {
    * @return SourceRow
    */
   private SourceRow getOrUpsertSource(SourceDao sourceDao, Dataset ds, Instant now) {
-    String sourceName = null;
-    String sourceUri = null;
-    if (ds.getFacets() != null && ds.getFacets().getDataSource() != null){
+    String sourceName = DEFAULT_SOURCE_NAME;
+    String sourceUri = "";
+    if (ds.getFacets() != null && ds.getFacets().getDataSource() != null) {
       sourceName = ds.getFacets().getDataSource().getName() == null ?
             DEFAULT_SOURCE_NAME :
             ds.getFacets().getDataSource().getName();
-
       sourceUri = getUrlOrNull(ds.getFacets().getDataSource().getUri());
     }
 
